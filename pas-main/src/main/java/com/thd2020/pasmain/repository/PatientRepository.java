@@ -18,4 +18,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     // 根据性别查找患者
     List<Patient> findByGender(Patient.Gender gender);
+
+    // 根据医生ID查找患者
+    List<Patient> findByDoctor_DoctorId(Long doctorId);
 }

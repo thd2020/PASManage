@@ -5,6 +5,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.repository.UserRepository;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +21,8 @@ public class UserService {
     // 用户注册
     public User registerUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setCreatedAt(LocalDateTime.now());
+        user.setStatus(User.Status.ACTIVE); // 默认设置为ACTIVE
         return userRepository.save(user);
     }
 
@@ -38,6 +42,7 @@ public class UserService {
     public Optional<User> getUserById(Long userId) {
         return userRepository.findById(userId);
     }
+    public Optional<User> getUserByUsername(String username) { return userRepository.findByUsername(username); }
 
     // 更新用户信息
     public Optional<User> updateUser(Long userId, User updatedUser) {
