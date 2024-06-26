@@ -10,6 +10,7 @@ import com.thd2020.pasmain.service.InfoService;
 import com.thd2020.pasmain.service.UserService;
 import com.thd2020.pasmain.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -69,7 +70,7 @@ public class UserController {
 
     // 获取用户信息
     @GetMapping("/{userId}")
-    public ApiResponse<Optional<User>> getUserById(@PathVariable Long userId, @RequestHeader("Authorization") String token) {
+    public ApiResponse<Optional<User>> getUserById(@PathVariable("userId") Long userId, @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
@@ -130,13 +131,16 @@ public class UserController {
         }
     }
 
-    // 用户注销
+    // 用户登出
     @PostMapping("/logout")
-    public ApiResponse<Void> logoutUser(@RequestHeader("Authorization") String token) {
-        String username = jwtUtil.extractUsername(token.substring(7));
-        userService.logoutUser();
+    public ApiResponse<Void> logoutUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
+            userService.logoutUser(token);
+        }
         return new ApiResponse<>("success", "User logged out successfully", null);
     }
+
 
     // 获取所有用户列表（管理员权限）
     @GetMapping

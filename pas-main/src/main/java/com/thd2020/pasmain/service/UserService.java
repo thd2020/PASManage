@@ -1,6 +1,8 @@
 package com.thd2020.pasmain.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.thd2020.pasmain.entity.User;
@@ -17,6 +19,9 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
 
     // 用户注册
     public User registerUser(User user) {
@@ -90,8 +95,9 @@ public class UserService {
     }
 
     // 用户注销
-    public void logoutUser() {
-        // 注销逻辑可以根据需求实现，例如清除session或token
+    public void logoutUser(String token) {
+        // 将当前用户的token添加到黑名单
+        tokenBlacklistService.blacklistToken(token);
     }
 
     // 获取所有用户列表（管理员权限）
