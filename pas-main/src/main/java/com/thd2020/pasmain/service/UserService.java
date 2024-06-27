@@ -94,7 +94,7 @@ public class UserService {
         return false;
     }
 
-    // 用户注销
+    // 用户登出
     public void logoutUser(String token) {
         // 将当前用户的token添加到黑名单
         tokenBlacklistService.blacklistToken(token);
