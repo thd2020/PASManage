@@ -46,6 +46,9 @@ public class User implements UserDetails {
         return new java.util.ArrayList<>();
     }
 
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
+
     public enum Role {
         T_DOCTOR,
         B_DOCTOR,
@@ -57,5 +60,9 @@ public class User implements UserDetails {
         ACTIVE,
         INACTIVE,
         BANNED
+    }
+
+    public enum Provider {
+        LOCAL, GOOGLE
     }
 }

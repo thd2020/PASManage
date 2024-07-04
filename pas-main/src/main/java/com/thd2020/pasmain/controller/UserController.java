@@ -8,6 +8,7 @@ import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.Doctor;
 import com.thd2020.pasmain.service.InfoService;
 import com.thd2020.pasmain.service.UserService;
+import com.thd2020.pasmain.util.CustomOAuth2User;
 import com.thd2020.pasmain.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,9 +53,9 @@ public class UserController {
         } else if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
             Doctor doctor = new Doctor();
             doctor.setUser(registeredUser);
+            doctor.setName(registeredUser.getUsername());
             infoService.saveDoctor(doctor);
         }
-
         return new ApiResponse<>("success", "User registered successfully", registeredUser);
     }
 
@@ -63,12 +65,19 @@ public class UserController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         User user = (User) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(user.getUsername());
-        JwtResponse jwtResponse = new JwtResponse(token);
+        String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+        JwtResponse jwtResponse = new JwtResponse(token, user);
         return new ApiResponse<>("success", "Login successful", jwtResponse);
     }
 
-    // 获取用户信息
+    @GetMapping("/login/oauth2/code/google")
+    public void googleLogin(OAuth2AuthenticationToken authentication) {
+        CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+        userService.processOAuthPostLogin(oAuth2User.getEmail());
+    }
+
+
+// 获取用户信息
     @GetMapping("/{userId}")
     public ApiResponse<Optional<User>> getUserById(@PathVariable("userId") Long userId, @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
@@ -84,21 +93,23 @@ public class UserController {
 
     // 更新用户信息
     @PutMapping("/{userId}")
-    public ApiResponse<Optional<User>> updateUser(@PathVariable Long userId, @RequestBody User updatedUser, @RequestHeader("Authorization") String token) {
+    public ApiResponse<JwtResponse> updateUser(@PathVariable Long userId, @RequestBody User updatedUser, @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
         if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
             Optional<User> user = userService.updateUser(userId, updatedUser);
-            return new ApiResponse<>("success", "User updated successfully", user);
+            String newToken = jwtUtil.generateToken(user.orElseThrow().getUserId(), user.get().getUsername());
+            JwtResponse jwtResponse = new JwtResponse(newToken, user.get());
+            return new ApiResponse<>("success", "User updated successfully", jwtResponse);
         } else {
-            return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
+            return new ApiResponse<>("failure", "User not found", null);
         }
     }
 
     // 更改密码
     @PutMapping("/{userId}/change-password")
-    public ApiResponse<Boolean> changePassword(@PathVariable Long userId, @RequestParam String oldPassword, @RequestParam String newPassword, @RequestHeader("Authorization") String token) {
+    public ApiResponse<Boolean> changePassword(@PathVariable Long userId, @RequestBody String oldPassword, @RequestBody String newPassword, @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 

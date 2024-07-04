@@ -1,5 +1,6 @@
 package com.thd2020.pasmain.service;
 
+import com.thd2020.pasmain.dto.OAuthRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,6 +32,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public void processOAuthPostLogin(String email) {
+        Optional<User> existUser = userRepository.findByEmail(email);
+
+        if (existUser.isEmpty()) {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setProvider(User.Provider.GOOGLE);
+            userRepository.save(newUser);
+        }
+    }
+
+
     // 用户登录
     public Optional<User> loginUser(String username, String password) {
         Optional<User> userOptional = userRepository.findByUsername(username);
@@ -49,12 +62,28 @@ public class UserService {
     }
     public Optional<User> getUserByUsername(String username) { return userRepository.findByUsername(username); }
 
+
     // 更新用户信息
     public Optional<User> updateUser(Long userId, User updatedUser) {
         return userRepository.findById(userId).map(user -> {
-            user.setUsername(updatedUser.getUsername());
-            user.setEmail(updatedUser.getEmail());
-            user.setPhone(updatedUser.getPhone());
+            if (updatedUser.getUsername() != null && !updatedUser.getUsername().isEmpty()) {
+                user.setUsername(updatedUser.getUsername());
+            }
+            if (updatedUser.getEmail() != null && !updatedUser.getEmail().isEmpty()) {
+                user.setEmail(updatedUser.getEmail());
+            }
+            if (updatedUser.getPhone() != null && !updatedUser.getPhone().isEmpty()) {
+                user.setPhone(updatedUser.getPhone());
+            }
+            if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+            }
+            if (updatedUser.getRole() != null) {
+                user.setRole(updatedUser.getRole());
+            }
+            if (updatedUser.getStatus() != null) {
+                user.setStatus(updatedUser.getStatus());
+            }
             return userRepository.save(user);
         });
     }
