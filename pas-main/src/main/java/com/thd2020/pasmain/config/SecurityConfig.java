@@ -71,6 +71,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public DefaultOAuth2UserService defaultOAuth2UserService() {
+        return new DefaultOAuth2UserService();
+    }
+
+    @Bean
     public OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
         return new OidcUserService();
     }
