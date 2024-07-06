@@ -42,16 +42,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/api/v1/users/register", "/api/v1/users/login", "/oauth2/**").permitAll()
-                                .anyRequest().authenticated()
+                                .requestMatchers("/api/v1/users/register", "/api/v1/users/login", "/oauth2/**","/api/v1/users/login/oauth2/success").permitAll()
+                                .anyRequest().authenticated()  // 其他所有路径使用默认认证
                 )
                 .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
+                        .defaultSuccessUrl("/api/v1/users/login/oauth2/success", true)  // 登录成功后的默认跳转路径
                         .userInfoEndpoint(userInfo -> userInfo
-                                .oidcUserService(oidcUserService)
+                                .oidcUserService(oidcUserService())
                                 .userService(oauth2UserService())
                         )
                 );
@@ -82,7 +82,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService() {
-        return new DefaultOAuth2UserService();
+        return new CustomOAuth2UserService(new DefaultOAuth2UserService());
     }
 
 }

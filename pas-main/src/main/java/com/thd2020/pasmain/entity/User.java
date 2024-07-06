@@ -22,10 +22,10 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String email;
 
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     private String phone;
 
     @Enumerated(EnumType.STRING)

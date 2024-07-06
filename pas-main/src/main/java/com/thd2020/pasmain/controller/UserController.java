@@ -12,6 +12,8 @@ import com.thd2020.pasmain.util.CustomOAuth2User;
 import com.thd2020.pasmain.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,6 +21,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -72,12 +75,43 @@ public class UserController {
 
     @GetMapping("/login/oauth2/code/google")
     public void googleLogin(OAuth2AuthenticationToken authentication) {
-        CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        userService.processOAuthPostLogin(oAuth2User.getEmail());
     }
 
+    @GetMapping("/login/oauth2/success")
+    public ApiResponse<?> googleLoginSuccess() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
+            OAuth2User oAuth2User = (OAuth2User) oauth2Token.getPrincipal();
+            String email = oAuth2User.getAttribute("email");
+            String name = oAuth2User.getAttribute("name");
+            User user = userService.processOAuthPostLogin(email, name);
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            JwtResponse jwtResponse = new JwtResponse(token, user);
+            return new ApiResponse<>("success", "Login successful", jwtResponse);
+        } else {
+            return new ApiResponse<String>("error", "Authentication failed", null);
+        }
+    }
 
-// 获取用户信息
+    @PostMapping("/send-code")
+    public ApiResponse<?> sendVerificationCode(@RequestParam String phone) {
+        // 生成并发送验证码
+        String code = userService.generateAndSendCode(phone);
+        return new ApiResponse<>("success", "Verification code sent", null);
+    }
+
+    @PostMapping("/verify-code")
+    public ApiResponse<?> verifyCode(@RequestParam String phone, @RequestParam String code) {
+        if (userService.verifyCode(phone, code)) {
+            User user = userService.findOrCreateUserByPhone(phone);
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            return new ApiResponse<>("success", "Login successful", new JwtResponse(token, user));
+        } else {
+            return new ApiResponse<>("error", "Invalid verification code", null);
+        }
+    }
+
+    // 获取用户信息
     @GetMapping("/{userId}")
     public ApiResponse<Optional<User>> getUserById(@PathVariable("userId") Long userId, @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
