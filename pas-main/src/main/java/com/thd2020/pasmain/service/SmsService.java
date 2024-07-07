@@ -2,6 +2,7 @@ package com.thd2020.pasmain.service;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -14,23 +15,47 @@ import java.io.IOException;
 @Service
 public class SmsService {
 
-    @Value("${releans.api.key}")
+    @Value("${unimtx.api.key}")
     private String apiKey;
 
-    public void sendSms(String phone, String message) throws IOException {
-        String url = "https://api.releans.com/v2/message";
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpPost httpPost = new HttpPost(url);
+    @Value("${unimtx.send-otp.url}")
+    private String sendOtpUrl;
 
-        String payload = String.format("sender=YourSenderName&mobile=%s&content=%s", phone, message);
-        StringEntity entity = new StringEntity(payload);
+    @Value("${unimtx.verify-otp.url}")
+    private String verifyOtpUrl;
+
+    public void sendSms(String phone) throws IOException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        String url = sendOtpUrl + "&accessKeyId=" + apiKey;
+
+        HttpPost httpPost = new HttpPost(url);
+        String payload = String.format("{\"to\":\"%s\",\"signature\":\"合一矩阵\"}", phone);
+        StringEntity entity = new StringEntity(payload, "application/json", "UTF-8");
 
         httpPost.setEntity(entity);
-        httpPost.setHeader("Authorization", "Bearer " + apiKey);
-        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+        httpPost.setHeader("Content-Type", "application/json");
 
         CloseableHttpResponse response = client.execute(httpPost);
         System.out.println(EntityUtils.toString(response.getEntity()));
         client.close();
+    }
+
+    public boolean verifySms(String phone, String code) throws IOException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        String url = verifyOtpUrl + "&accessKeyId=" + apiKey;
+
+        HttpPost httpPost = new HttpPost(url);
+        String payload = String.format("{\"to\":\"%s\",\"code\":\"%s\"}", phone, code);
+        StringEntity entity = new StringEntity(payload, "application/json", "UTF-8");
+
+        httpPost.setEntity(entity);
+        httpPost.setHeader("Content-Type", "application/json");
+
+        CloseableHttpResponse response = client.execute(httpPost);
+        String responseBody = EntityUtils.toString(response.getEntity());
+        client.close();
+
+        // 解析响应
+        return responseBody.contains("\"valid\":true");
     }
 }

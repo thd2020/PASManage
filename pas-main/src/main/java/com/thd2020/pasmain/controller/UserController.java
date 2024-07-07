@@ -24,7 +24,9 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -94,34 +96,22 @@ public class UserController {
     }
 
     @PostMapping("/send-code")
-    public ApiResponse<?> sendVerificationCode(@RequestParam String phone) {
-        // 生成并发送验证码
-        String code = userService.generateAndSendCode(phone);
+    public ApiResponse<?> sendVerificationCode(@RequestBody Map<String, String> request) throws IOException {
+        String phone = request.get("phone");
+        userService.generateAndSendCode(phone);
         return new ApiResponse<>("success", "Verification code sent", null);
     }
 
     @PostMapping("/verify-code")
-    public ApiResponse<?> verifyCode(@RequestParam String phone, @RequestParam String code) {
+    public ApiResponse<?> verifyCode(@RequestBody Map<String, String> request) throws IOException {
+        String phone = request.get("phone");
+        String code = request.get("code");
         if (userService.verifyCode(phone, code)) {
             User user = userService.findOrCreateUserByPhone(phone);
             String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
             return new ApiResponse<>("success", "Login successful", new JwtResponse(token, user));
         } else {
             return new ApiResponse<>("error", "Invalid verification code", null);
-        }
-    }
-
-    // 获取用户信息
-    @GetMapping("/{userId}")
-    public ApiResponse<Optional<User>> getUserById(@PathVariable("userId") Long userId, @RequestHeader("Authorization") String token) {
-        String username = jwtUtil.extractUsername(token.substring(7));
-        Optional<User> requestingUser = userService.getUserByUsername(username);
-
-        if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
-            Optional<User> user = userService.getUserById(userId);
-            return new ApiResponse<>("success", "User fetched successfully", user);
-        } else {
-            return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
         }
     }
 

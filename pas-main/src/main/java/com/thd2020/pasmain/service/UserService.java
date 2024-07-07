@@ -41,16 +41,16 @@ public class UserService {
     public User processOAuthPostLogin(String email, String userName) {
         Optional<User> existUser = userRepository.findByEmail(email);
         if (existUser.isEmpty()) {
-            User newUser = new User();
-            newUser.setUsername(userName);
-            newUser.setEmail(email);
-            newUser.setProvider(User.Provider.GOOGLE);
-            newUser.setCreatedAt(LocalDateTime.now());
-            newUser.setStatus(User.Status.ACTIVE); // 默认设置为ACTIVE
+            User user = new User();
+            user.setUsername(userName);
+            user.setEmail(email);
+            user.setProvider(User.Provider.GOOGLE);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setStatus(User.Status.ACTIVE); // 默认设置为ACTIVE
             String rawPassword = String.format("%s:%s:%s", userName, email, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-            newUser.setPassword(passwordEncoder.encode(rawPassword));
-            newUser.setRole(User.Role.PATIENT);
-            return userRepository.save(newUser);
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            user.setRole(User.Role.PATIENT);
+            return userRepository.save(user);
         }
         else{
             return existUser.get();
@@ -72,37 +72,25 @@ public class UserService {
         return Optional.empty();
     }
 
-    public String generateAndSendCode(String phone) {
-        String code = String.valueOf(new Random().nextInt(900000) + 100000);
-        verificationCodes.put(phone, code);
-        try {
-            smsService.sendSms(phone, "Your verification code is " + code);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to send verification code");
-        }
-        return code;
+    public void generateAndSendCode(String phone) throws IOException {
+        smsService.sendSms(phone);
     }
 
-    public boolean verifyCode(String phone, String code) {
-        return code.equals(verificationCodes.get(phone));
+    public boolean verifyCode(String phone, String code) throws IOException {
+        return smsService.verifySms(phone, code);
     }
 
     public User findOrCreateUserByPhone(String phone) {
-        if (!userRepository.findByPhone(phone).isPresent()) {
-            User user = new User();
-            user.setPhone(phone);
-            user.setUsername(phone);
+        User user = userRepository.findByPhone(phone).isPresent()?userRepository.findByPhone(phone).get():null;
+        if (user == null) {
+            user = new User();
             user.setCreatedAt(LocalDateTime.now());
             user.setStatus(User.Status.ACTIVE); // 默认设置为ACTIVE
-            String rawPassword = String.format("%s:%s:%s", phone, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-            user.setPassword(passwordEncoder.encode(rawPassword));
             user.setRole(User.Role.PATIENT);
-            return userRepository.save(user);
+            user.setPassword(passwordEncoder.encode(phone + LocalDateTime.now())); // 使用phone和当前时间生成密码
+            userRepository.save(user);
         }
-        else{
-            return userRepository.findByPhone(phone).get();
-        }
+        return user;
     }
 
     // 获取用户信息

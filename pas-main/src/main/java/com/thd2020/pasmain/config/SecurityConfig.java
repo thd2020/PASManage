@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,10 +40,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/api/v1/users/register", "/api/v1/users/login", "/oauth2/**","/api/v1/users/login/oauth2/success").permitAll()
+                                .requestMatchers("/api/v1/users/register",
+                                        "/api/v1/users/login",
+                                        "/oauth2/**",
+                                        "/api/v1/users/login/oauth2/success",
+                                        "/api/v1/users/send-code",
+                                        "/api/v1/users/verify-code",
+                                        "/error").permitAll()
                                 .anyRequest().authenticated()  // 其他所有路径使用默认认证
                 )
                 .sessionManagement(sessionManagement ->
