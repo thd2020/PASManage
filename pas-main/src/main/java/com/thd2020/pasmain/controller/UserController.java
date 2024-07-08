@@ -10,6 +10,12 @@ import com.thd2020.pasmain.service.InfoService;
 import com.thd2020.pasmain.service.UserService;
 import com.thd2020.pasmain.util.CustomOAuth2User;
 import com.thd2020.pasmain.util.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,10 +53,12 @@ public class UserController {
 
     // 用户注册
     @PostMapping("/register")
-    public ApiResponse<User> registerUser(@RequestBody User user) {
+    @Operation(summary = "用户注册", description = "允许新用户注册账号。")
+    public ApiResponse<User> registerUser(
+            @Parameter(description = "用户注册信息", required = true)
+            @RequestBody User user) {
         User registeredUser = userService.registerUser(user);
-
-        // 根据角色将用户关联到病人或医生
+        // 根据角色将用户关联到病人或医生c
         if (user.getRole() == User.Role.PATIENT) {
             Patient patient = new Patient();
             patient.setUser(registeredUser);
@@ -66,7 +74,10 @@ public class UserController {
 
     // 用户登录
     @PostMapping("/login")
-    public ApiResponse<JwtResponse> loginUser(@RequestBody AuthenticationRequest authenticationRequest) throws AuthenticationException {
+    @Operation(summary = "用户登录", description = "允许用户使用用户名和密码登录。")
+    public ApiResponse<JwtResponse> loginUser(
+            @Parameter(description = "用户登录信息", required = true)
+            @RequestBody AuthenticationRequest authenticationRequest) throws AuthenticationException {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         User user = (User) authentication.getPrincipal();
@@ -75,11 +86,9 @@ public class UserController {
         return new ApiResponse<>("success", "Login successful", jwtResponse);
     }
 
-    @GetMapping("/login/oauth2/code/google")
-    public void googleLogin(OAuth2AuthenticationToken authentication) {
-    }
-
+    // Google OAuth2 登录成功回调
     @GetMapping("/login/oauth2/success")
+    @Operation(summary = "Google OAuth2 登录成功回调", description = "处理Google OAuth2登录成功后的回调。")
     public ApiResponse<?> googleLoginSuccess() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
@@ -95,15 +104,23 @@ public class UserController {
         }
     }
 
+    // 验证码登录
     @PostMapping("/send-code")
-    public ApiResponse<?> sendVerificationCode(@RequestBody Map<String, String> request) throws IOException {
+    @Operation(summary = "发送验证码", description = "向用户的手机发送验证码，用于注册或登录。")
+    public ApiResponse<?> sendVerificationCode(
+            @Parameter(description = "包含用户手机号的请求体", required = true)
+            @RequestBody Map<String, String> request) throws IOException {
         String phone = request.get("phone");
         userService.generateAndSendCode(phone);
         return new ApiResponse<>("success", "Verification code sent", null);
     }
 
+    // 验证码验证
     @PostMapping("/verify-code")
-    public ApiResponse<?> verifyCode(@RequestBody Map<String, String> request) throws IOException {
+    @Operation(summary = "验证验证码", description = "验证用户提供的验证码，并进行登录或注册。")
+    public ApiResponse<?> verifyCode(
+            @Parameter(description = "包含用户手机号和验证码的请求体", required = true)
+            @RequestBody Map<String, String> request) throws IOException {
         String phone = request.get("phone");
         String code = request.get("code");
         if (userService.verifyCode(phone, code)) {
@@ -115,9 +132,36 @@ public class UserController {
         }
     }
 
+    // 获取用户信息
+    @GetMapping("/{userId}")
+    @Operation(summary = "获取用户信息", description = "允许管理员或用户本人获取用户的详细信息。")
+    public ApiResponse<Optional<User>> getUserById(
+            @Parameter(description = "要获取信息的用户ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "用于身份验证的JWT令牌，以\"Bearer \"开头", required = true)
+            @RequestHeader("Authorization") String token) {
+
+        String username = jwtUtil.extractUsername(token.substring(7));
+        Optional<User> requestingUser = userService.getUserByUsername(username);
+
+        if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
+            Optional<User> user = userService.getUserById(userId);
+            return new ApiResponse<>("success", "用户信息获取成功", user);
+        } else {
+            return new ApiResponse<>("failure", "未授权", Optional.empty());
+        }
+    }
+
     // 更新用户信息
     @PutMapping("/{userId}")
-    public ApiResponse<JwtResponse> updateUser(@PathVariable Long userId, @RequestBody User updatedUser, @RequestHeader("Authorization") String token) {
+    @Operation(summary = "更新用户信息", description = "允许管理员或用户本人更新用户的详细信息。")
+    public ApiResponse<JwtResponse> updateUser(
+            @Parameter(description = "要更新信息的用户ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "更新后的用户信息", required = true)
+            @RequestBody User updatedUser,
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
@@ -133,7 +177,16 @@ public class UserController {
 
     // 更改密码
     @PutMapping("/{userId}/change-password")
-    public ApiResponse<Boolean> changePassword(@PathVariable Long userId, @RequestBody String oldPassword, @RequestBody String newPassword, @RequestHeader("Authorization") String token) {
+    @Operation(summary = "更改用户密码", description = "允许经过身份验证的用户更改自己的密码，或允许管理员更改任何用户的密码。")
+    public ApiResponse<Boolean> changePassword(
+            @Parameter(description = "要更改密码的用户ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "旧密码", required = true)
+            @RequestBody String oldPassword,
+            @Parameter(description = "新密码", required = true)
+            @RequestBody String newPassword,
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
@@ -147,7 +200,12 @@ public class UserController {
 
     // 重置密码
     @PostMapping("/reset-password")
-    public ApiResponse<Boolean> resetPassword(@RequestParam String email, @RequestParam String newPassword) {
+    @Operation(summary = "重置密码", description = "允许用户通过电子邮件重置密码。")
+    public ApiResponse<Boolean> resetPassword(
+            @Parameter(description = "用户的电子邮件地址", required = true)
+            @RequestParam String email,
+            @Parameter(description = "新密码", required = true)
+            @RequestParam String newPassword) {
         boolean result = userService.resetPassword(email, newPassword);
         return new ApiResponse<>("success", "Password reset successfully", result);
     }

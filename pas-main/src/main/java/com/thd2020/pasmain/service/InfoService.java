@@ -122,8 +122,6 @@ public class InfoService {
     public Optional<Patient> updatePatient(Long patientId, Patient updatedPatient) {
         return patientRepository.findById(patientId).map(patient -> {
             patient.setName(updatedPatient.getName());
-            patient.setPhone(updatedPatient.getPhone());
-            patient.setEmail(updatedPatient.getEmail());
             patient.setAddress(updatedPatient.getAddress());
             // 更新其他需要的字段
             return patientRepository.save(patient);

@@ -43,14 +43,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/api/v1/users/register",
-                                        "/api/v1/users/login",
-                                        "/oauth2/**",
-                                        "/api/v1/users/login/oauth2/success",
-                                        "/api/v1/users/send-code",
-                                        "/api/v1/users/verify-code",
-                                        "/error").permitAll()
-                                .anyRequest().authenticated()  // 其他所有路径使用默认认证
+                                .requestMatchers("/api/v1/users/login/oauth2/code/google").authenticated()
+                                .anyRequest().permitAll()  // 其他所有路径允许访问
                 )
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

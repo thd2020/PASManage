@@ -31,12 +31,6 @@ public class Patient {
     @Column(nullable = false)
     private LocalDate birthDate;
 
-    @Column(nullable = false, length = 20)
-    private String phone;
-
-    @Column(nullable = false, length = 100)
-    private String email;
-
     @Column(nullable = false, length = 255)
     private String address;
 

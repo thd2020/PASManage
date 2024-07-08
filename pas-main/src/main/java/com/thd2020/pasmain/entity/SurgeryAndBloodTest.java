@@ -37,16 +37,16 @@ public class SurgeryAndBloodTest {
 
     private Integer plasmaTransfused;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float preoperativeHb;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float preoperativeHct;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float postoperative24hHb;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float postoperative24hHct;
 
     @Column(length = 100)

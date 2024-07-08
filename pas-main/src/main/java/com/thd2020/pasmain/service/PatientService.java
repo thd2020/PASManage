@@ -31,8 +31,6 @@ public class PatientService {
             patient.setName(updatedPatient.getName());
             patient.setGender(updatedPatient.getGender());
             patient.setBirthDate(updatedPatient.getBirthDate());
-            patient.setPhone(updatedPatient.getPhone());
-            patient.setEmail(updatedPatient.getEmail());
             patient.setAddress(updatedPatient.getAddress());
             patientRepository.save(patient);
             return new ApiResponse<>("success", "Patient updated successfully", patient);

@@ -28,22 +28,22 @@ public class MedicalRecord {
 
     private Integer age;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float heightCm;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float preDeliveryWeight;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float afp;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float bHcg;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float ue3;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 5)
     private Float inhibinA;
 
     private Integer gravidity;
