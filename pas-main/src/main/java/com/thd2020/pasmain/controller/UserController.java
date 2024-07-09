@@ -140,10 +140,8 @@ public class UserController {
             @PathVariable Long userId,
             @Parameter(description = "用于身份验证的JWT令牌，以\"Bearer \"开头", required = true)
             @RequestHeader("Authorization") String token) {
-
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
-
         if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
             Optional<User> user = userService.getUserById(userId);
             return new ApiResponse<>("success", "用户信息获取成功", user);
@@ -164,7 +162,6 @@ public class UserController {
             @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
-
         if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
             Optional<User> user = userService.updateUser(userId, updatedUser);
             String newToken = jwtUtil.generateToken(user.orElseThrow().getUserId(), user.get().getUsername());
@@ -189,7 +186,6 @@ public class UserController {
             @RequestHeader("Authorization") String token) {
         String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
-
         if (requestingUser.isPresent() && (requestingUser.get().getRole() == User.Role.ADMIN || requestingUser.get().getUserId().equals(userId))) {
             boolean result = userService.changePassword(userId, oldPassword, newPassword);
             return new ApiResponse<>("success", "Password changed successfully", result);
@@ -212,8 +208,13 @@ public class UserController {
 
     // 删除用户
     @DeleteMapping("/{userId}")
-    public ApiResponse<Boolean> deleteUser(@PathVariable Long userId, @RequestHeader("Authorization") String token) {
-        String username = jwtUtil.extractUsername(token.substring(7));
+    @Operation(summary = "删除用户", description = "允许管理员删除用户。")
+    public ApiResponse<Boolean> deleteUser(
+            @Parameter(description = "要删除的用户ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader("Authorization") String token) {
+    String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
@@ -226,7 +227,10 @@ public class UserController {
 
     // 用户登出
     @PostMapping("/logout")
-    public ApiResponse<Void> logoutUser(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
+    @Operation(summary = "用户登出", description = "允许用户登出。")
+    public ApiResponse<Void> logoutUser(
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7); // Remove "Bearer " prefix
             userService.logoutUser(token);
@@ -237,10 +241,12 @@ public class UserController {
 
     // 获取所有用户列表（管理员权限）
     @GetMapping
-    public ApiResponse<List<User>> getAllUsers(@RequestHeader("Authorization") String token) {
-        String username = jwtUtil.extractUsername(token.substring(7));
+    @Operation(summary = "获取所有用户列表", description = "允许管理员获取所有用户的列表。")
+    public ApiResponse<List<User>> getAllUsers(
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader("Authorization") String token) {
+    String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
-
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
             List<User> users = userService.getAllUsers();
             return new ApiResponse<>("success", "Users fetched successfully", users);
@@ -251,8 +257,15 @@ public class UserController {
 
     // 分配用户角色（管理员权限）
     @PutMapping("/{userId}/assign-role")
-    public ApiResponse<Optional<User>> assignRole(@PathVariable Long userId, @RequestParam String role, @RequestHeader("Authorization") String token) {
-        String username = jwtUtil.extractUsername(token.substring(7));
+    @Operation(summary = "分配用户角色", description = "允许管理员分配用户角色。")
+    public ApiResponse<Optional<User>> assignRole(
+            @Parameter(description = "要分配角色的用户ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "要分配的角色", required = true)
+            @RequestParam String role,
+            @Parameter(description = "用于身份验证的JWT令牌", required = true)
+            @RequestHeader("Authorization") String token) {
+    String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
