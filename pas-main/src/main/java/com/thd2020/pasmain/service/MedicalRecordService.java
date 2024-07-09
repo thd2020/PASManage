@@ -4,11 +4,12 @@ import com.thd2020.pasmain.entity.MedicalRecord;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.repository.MedicalRecordRepository;
 import com.thd2020.pasmain.repository.PatientRepository;
-import com.thd2020.pasmain.util.utilFunctions;
+import com.thd2020.pasmain.util.UtilFunctions;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -19,6 +20,9 @@ public class MedicalRecordService {
 
     @Autowired
     private PatientRepository patientRepository;
+
+    @Autowired
+    private UtilFunctions utilFunctions;
 
     public MedicalRecord addMedicalRecord(MedicalRecord medicalRecord) {
         // 验证患者ID
@@ -47,5 +51,9 @@ public class MedicalRecordService {
     public void deleteMedicalRecord(int recordId) {
         MedicalRecord medicalRecord = getMedicalRecordById(recordId);
         medicalRecordRepository.delete(medicalRecord);
+    }
+
+    public List<Long> findRecordIdsByPatientId(Long patientId) {
+        return medicalRecordRepository.findByPatient_PatientId(patientId);
     }
 }

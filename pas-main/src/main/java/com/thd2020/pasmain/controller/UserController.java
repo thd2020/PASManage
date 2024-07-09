@@ -3,12 +3,13 @@ package com.thd2020.pasmain.controller;
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.AuthenticationRequest;
 import com.thd2020.pasmain.dto.JwtResponse;
+import com.thd2020.pasmain.dto.RelatedIdsResponse;
 import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.Doctor;
-import com.thd2020.pasmain.service.InfoService;
-import com.thd2020.pasmain.service.UserService;
+import com.thd2020.pasmain.service.*;
 import com.thd2020.pasmain.util.JwtUtil;
+import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -39,10 +40,25 @@ public class UserController {
     private InfoService infoService;
 
     @Autowired
+    private PatientService patientService;
+
+    @Autowired
+    private MedicalRecordService medicalRecordService;
+
+    @Autowired
+    private SurgeryAndBloodTestService surgeryAndBloodTestService;
+
+    @Autowired
+    private UltrasoundScoreService ultrasoundScoreService;
+
+    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UtilFunctions utilFunctions;
 
     // 用户注册
     @PostMapping("/register")
@@ -237,7 +253,7 @@ public class UserController {
     public ApiResponse<List<User>> getAllUsers(
             @Parameter(description = "用于身份验证的JWT令牌", required = true)
             @RequestHeader("Authorization") String token) {
-    String username = jwtUtil.extractUsername(token.substring(7));
+        String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
             List<User> users = userService.getAllUsers();
@@ -257,15 +273,56 @@ public class UserController {
             @RequestParam String role,
             @Parameter(description = "用于身份验证的JWT令牌", required = true)
             @RequestHeader("Authorization") String token) {
-    String username = jwtUtil.extractUsername(token.substring(7));
+        String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
-
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
             User.Role userRole = User.Role.valueOf(role.toUpperCase());
             Optional<User> user = userService.assignRole(userId, userRole);
             return new ApiResponse<>("success", "Role assigned successfully", user);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
+        }
+    }
+
+    @GetMapping("/find-by-username")
+    @Operation(summary = "通过用户名查询用户ID", description = "允许管理员通过用户名查询所有对应名字的用户ID")
+    public ApiResponse<Long> getUserIdsByUsername(
+            @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
+            @Parameter(description = "用户名", required = true) @RequestParam String username) {
+
+        if (utilFunctions.isAdmin(token)) {
+            Long userId = userService.findUserIdsByUsername(username);
+            if (userId != null) {
+                return new ApiResponse<>("success", "User IDs fetched successfully", userId);
+            }
+            else {
+                return new ApiResponse<>("failure", "No such user", null);
+            }
+        } else {
+            return new ApiResponse<>("failure", "Unauthorized", null);
+        }
+    }
+
+    @GetMapping("/related-ids/{userId}")
+    @Operation(summary = "通过用户ID查询相关记录ID", description = "允许管理员通过用户ID查询Patient的patientId，MedicalRecord的RecordId，SurgeryAndBloodTest的RecordId，以及UltrasoundScore的ScoreId")
+    public ApiResponse<RelatedIdsResponse> getRelatedIdsByUserId(
+            @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+
+        if (utilFunctions.isAdmin(token)) {
+            Optional<Patient> patient = patientService.findPatientByUserId(userId);
+            if (patient.isPresent()) {
+                List<Long> medicalRecordIds = medicalRecordService.findRecordIdsByPatientId(patient.get().getPatientId());
+                List<Long> surgeryAndBloodTestIds = surgeryAndBloodTestService.findRecordIdsByPatientId(patient.get().getPatientId());
+                List<Long> ultrasoundScoreIds = ultrasoundScoreService.findScoreIdsByPatientId(patient.get().getPatientId());
+                RelatedIdsResponse response = new RelatedIdsResponse(patient.get().getPatientId(), medicalRecordIds, surgeryAndBloodTestIds, ultrasoundScoreIds);
+                return new ApiResponse<>("success", "Related IDs fetched successfully", response);
+            }
+            else {
+                return new ApiResponse<>("failure", "No such patient corresponding to this user", null);
+            }
+        } else {
+            return new ApiResponse<>("failure", "Unauthorized", null);
         }
     }
 }

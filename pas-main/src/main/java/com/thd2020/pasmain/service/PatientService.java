@@ -14,6 +14,10 @@ public class PatientService {
     @Autowired
     private PatientRepository patientRepository;
 
+    public Optional<Patient> findPatientByUserId(Long userId) {
+        return patientRepository.findByUser_UserId(userId);
+    }
+
     public ApiResponse<Patient> addPatient(Patient patient) {
         patientRepository.save(patient);
         return new ApiResponse<>("success", "Patient added successfully", patient);

@@ -4,10 +4,12 @@ import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.SurgeryAndBloodTest;
 import com.thd2020.pasmain.repository.PatientRepository;
 import com.thd2020.pasmain.repository.SurgeryAndBloodTestRepository;
-import com.thd2020.pasmain.util.utilFunctions;
+import com.thd2020.pasmain.util.UtilFunctions;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,6 +20,9 @@ public class SurgeryAndBloodTestService {
 
     @Autowired
     private PatientRepository patientRepository;
+
+    @Autowired
+    private UtilFunctions utilFunctions;
 
     public SurgeryAndBloodTest addSurgeryAndBloodTest(SurgeryAndBloodTest surgeryAndBloodTest) {
         // 验证患者ID
@@ -46,5 +51,9 @@ public class SurgeryAndBloodTestService {
     public void deleteSurgeryAndBloodTest(int recordId) {
         SurgeryAndBloodTest surgeryAndBloodTest = getSurgeryAndBloodTestById(recordId);
         surgeryAndBloodTestRepository.delete(surgeryAndBloodTest);
+    }
+
+    public List<Long> findRecordIdsByPatientId(Long patientId) {
+        return surgeryAndBloodTestRepository.findByPatient_PatientId(patientId);
     }
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 @Entity
 @Data
 @Schema(description = "手术和血液检查记录")
-public class SurgeryAndBloodTest {
+    public class SurgeryAndBloodTest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

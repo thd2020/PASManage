@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -177,5 +178,11 @@ public class UserService {
             user.setRole(role);
             return userRepository.save(user);
         });
+    }
+
+    // 通过姓名找所有匹配的id
+    public Long findUserIdsByUsername(String username) {
+        Optional<User> user = userRepository.findByUsername(username);
+        return user.map(User::getUserId).orElse(null);
     }
 }

@@ -4,10 +4,12 @@ import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.UltrasoundScore;
 import com.thd2020.pasmain.repository.PatientRepository;
 import com.thd2020.pasmain.repository.UltrasoundScoreRepository;
-import com.thd2020.pasmain.util.utilFunctions;
+import com.thd2020.pasmain.util.UtilFunctions;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,6 +20,9 @@ public class UltrasoundScoreService {
 
     @Autowired
     private PatientRepository patientRepository;
+
+    @Autowired
+    private UtilFunctions utilFunctions;
 
     public UltrasoundScore addUltrasoundScore(UltrasoundScore ultrasoundScore) {
         // 验证患者ID
@@ -46,5 +51,9 @@ public class UltrasoundScoreService {
     public void deleteUltrasoundScore(int scoreId) {
         UltrasoundScore ultrasoundScore = getUltrasoundScoreById(scoreId);
         ultrasoundScoreRepository.delete(ultrasoundScore);
+    }
+
+    public List<Long> findScoreIdsByPatientId(Long patientId) {
+        return ultrasoundScoreRepository.findByPatient_PatientId(patientId);
     }
 }

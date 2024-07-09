@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import com.thd2020.pasmain.entity.Patient;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PatientRepository extends JpaRepository<Patient, Long> {
@@ -11,7 +12,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     Patient findByPassId(String passId);
 
     // 根据用户ID查找患者
-    List<Patient> findByUser_UserId(Long userId);
+    Optional<Patient> findByUser_UserId(Long userId);
 
     // 根据姓名查找患者
     List<Patient> findByName(String name);
