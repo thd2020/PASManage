@@ -41,8 +41,6 @@ public class InfoService {
     public Optional<Doctor> updateDoctor(Long doctorId, Doctor updatedDoctor) {
         return doctorRepository.findById(doctorId).map(doctor -> {
             doctor.setName(updatedDoctor.getName());
-            doctor.setPhone(updatedDoctor.getPhone());
-            doctor.setEmail(updatedDoctor.getEmail());
             doctor.setTitle(updatedDoctor.getTitle());
             doctor.setDepartment(updatedDoctor.getDepartment());
             return doctorRepository.save(doctor);

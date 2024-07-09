@@ -8,31 +8,24 @@ import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.Doctor;
 import com.thd2020.pasmain.service.InfoService;
 import com.thd2020.pasmain.service.UserService;
-import com.thd2020.pasmain.util.CustomOAuth2User;
 import com.thd2020.pasmain.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -104,25 +97,24 @@ public class UserController {
         }
     }
 
-    // 验证码登录
+    // 发送验证码
     @PostMapping("/send-code")
     @Operation(summary = "发送验证码", description = "向用户的手机发送验证码，用于注册或登录。")
     public ApiResponse<?> sendVerificationCode(
-            @Parameter(description = "包含用户手机号的请求体", required = true)
-            @RequestBody Map<String, String> request) throws IOException {
-        String phone = request.get("phone");
+            @Parameter(description = "手机号", required = true)
+            @RequestParam String phone) throws IOException {
         userService.generateAndSendCode(phone);
         return new ApiResponse<>("success", "Verification code sent", null);
     }
 
-    // 验证码验证
+    // 验证验证码
     @PostMapping("/verify-code")
-    @Operation(summary = "验证验证码", description = "验证用户提供的验证码，并进行登录或注册。")
+    @Operation(summary = "验证验证码", description = "验证用户提供的验证码是否正确。")
     public ApiResponse<?> verifyCode(
-            @Parameter(description = "包含用户手机号和验证码的请求体", required = true)
-            @RequestBody Map<String, String> request) throws IOException {
-        String phone = request.get("phone");
-        String code = request.get("code");
+            @Parameter(description = "手机号", required = true)
+            @RequestParam String phone,
+            @Parameter(description = "验证码", required = true)
+            @RequestParam String code) throws IOException {
         if (userService.verifyCode(phone, code)) {
             User user = userService.findOrCreateUserByPhone(phone);
             String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
@@ -214,7 +206,7 @@ public class UserController {
             @PathVariable Long userId,
             @Parameter(description = "用于身份验证的JWT令牌", required = true)
             @RequestHeader("Authorization") String token) {
-    String username = jwtUtil.extractUsername(token.substring(7));
+        String username = jwtUtil.extractUsername(token.substring(7));
         Optional<User> requestingUser = userService.getUserByUsername(username);
 
         if (requestingUser.isPresent() && requestingUser.get().getRole() == User.Role.ADMIN) {
