@@ -12,8 +12,6 @@ import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,7 +35,7 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private InfoService infoService;
+    private MedInfoService medInfoService;
 
     @Autowired
     private PatientService patientService;
@@ -71,12 +69,12 @@ public class UserController {
         if (user.getRole() == User.Role.PATIENT) {
             Patient patient = new Patient();
             patient.setUser(registeredUser);
-            infoService.savePatient(patient);
+            patientService.addPatient(patient);
         } else if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
             Doctor doctor = new Doctor();
             doctor.setUser(registeredUser);
             doctor.setName(registeredUser.getUsername());
-            infoService.saveDoctor(doctor);
+            medInfoService.saveDoctor(doctor);
         }
         return new ApiResponse<>("success", "User registered successfully", registeredUser);
     }
@@ -87,12 +85,16 @@ public class UserController {
     public ApiResponse<JwtResponse> loginUser(
             @Parameter(description = "用户登录信息", required = true)
             @RequestBody AuthenticationRequest authenticationRequest) throws AuthenticationException {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
-        User user = (User) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
-        JwtResponse jwtResponse = new JwtResponse(token, user);
-        return new ApiResponse<>("success", "Login successful", jwtResponse);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
+            User user = (User) authentication.getPrincipal();
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            JwtResponse jwtResponse = new JwtResponse(token, user);
+            return new ApiResponse<>("success", "Login successful", jwtResponse);
+        } catch (AuthenticationException e) {
+            return new ApiResponse<>("failed", "Username and Password not match", null);
+        }
     }
 
     // Google OAuth2 登录成功回调

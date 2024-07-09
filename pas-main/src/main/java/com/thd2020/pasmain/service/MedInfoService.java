@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class InfoService {
+public class MedInfoService {
 
     @Autowired
     private DoctorRepository doctorRepository;
@@ -104,31 +104,6 @@ public class InfoService {
     public boolean deleteDepartment(Long departmentId) {
         return departmentRepository.findById(departmentId).map(department -> {
             departmentRepository.delete(department);
-            return true;
-        }).orElse(false);
-    }
-
-    // Patient related methods
-    public Patient savePatient(Patient patient) {
-        return patientRepository.save(patient);
-    }
-
-    public Optional<Patient> getPatientById(Long patientId) {
-        return patientRepository.findById(patientId);
-    }
-
-    public Optional<Patient> updatePatient(Long patientId, Patient updatedPatient) {
-        return patientRepository.findById(patientId).map(patient -> {
-            patient.setName(updatedPatient.getName());
-            patient.setAddress(updatedPatient.getAddress());
-            // 更新其他需要的字段
-            return patientRepository.save(patient);
-        });
-    }
-
-    public boolean deletePatient(Long patientId) {
-        return patientRepository.findById(patientId).map(patient -> {
-            patientRepository.delete(patient);
             return true;
         }).orElse(false);
     }
