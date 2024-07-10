@@ -18,9 +18,8 @@ public class PatientService {
         return patientRepository.findByUser_UserId(userId);
     }
 
-    public ApiResponse<Patient> addPatient(Patient patient) {
-        patientRepository.save(patient);
-        return new ApiResponse<>("success", "Patient added successfully", patient);
+    public Patient addPatient(Patient patient) {
+        return patientRepository.save(patient);
     }
 
     public ApiResponse<Patient> getPatient(Long patientId) {

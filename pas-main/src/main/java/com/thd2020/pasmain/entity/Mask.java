@@ -3,6 +3,7 @@ package com.thd2020.pasmain.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.core.io.Resource;
 
 @Entity
 @Data
@@ -23,6 +24,10 @@ public class Mask {
     @Schema(description = "分割掩膜路径", example = "/path/to/mask123.png")
     private String segmentationMaskPath;
 
+    @Transient
+    @Schema(description = "掩膜文件")
+    private Resource maskResource;
+
     @Column(nullable = false, length = 255)
     @Schema(description = "分割json路径", example = "/path/to/mask123.json")
     private String segmentationJsonPath;
@@ -30,7 +35,7 @@ public class Mask {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Schema(description = "分割来源", example = "MODEL")
-    private SegmentationSource segmentationSource;
+    public SegmentationSource segmentationSource;
 
     public enum SegmentationSource {
         MODEL, DOCTOR

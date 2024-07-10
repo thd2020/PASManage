@@ -35,19 +35,13 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private MedInfoService medInfoService;
+    private DocInfoService docInfoService;
 
     @Autowired
     private PatientService patientService;
 
     @Autowired
-    private MedicalRecordService medicalRecordService;
-
-    @Autowired
-    private SurgeryAndBloodTestService surgeryAndBloodTestService;
-
-    @Autowired
-    private UltrasoundScoreService ultrasoundScoreService;
+    private PRInfoService prInfoService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -74,7 +68,7 @@ public class UserController {
             Doctor doctor = new Doctor();
             doctor.setUser(registeredUser);
             doctor.setName(registeredUser.getUsername());
-            medInfoService.saveDoctor(doctor);
+            docInfoService.saveDoctor(doctor);
         }
         return new ApiResponse<>("success", "User registered successfully", registeredUser);
     }
@@ -314,9 +308,9 @@ public class UserController {
         if (utilFunctions.isAdmin(token)) {
             Optional<Patient> patient = patientService.findPatientByUserId(userId);
             if (patient.isPresent()) {
-                List<Long> medicalRecordIds = medicalRecordService.findRecordIdsByPatientId(patient.get().getPatientId());
-                List<Long> surgeryAndBloodTestIds = surgeryAndBloodTestService.findRecordIdsByPatientId(patient.get().getPatientId());
-                List<Long> ultrasoundScoreIds = ultrasoundScoreService.findScoreIdsByPatientId(patient.get().getPatientId());
+                List<Long> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patient.get().getPatientId());
+                List<Long> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patient.get().getPatientId());
+                List<Long> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patient.get().getPatientId());
                 RelatedIdsResponse response = new RelatedIdsResponse(patient.get().getPatientId(), medicalRecordIds, surgeryAndBloodTestIds, ultrasoundScoreIds);
                 return new ApiResponse<>("success", "Related IDs fetched successfully", response);
             }

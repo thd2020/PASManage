@@ -2,7 +2,7 @@ package com.thd2020.pasmain.controller;
 
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.entity.*;
-import com.thd2020.pasmain.service.MedInfoService;
+import com.thd2020.pasmain.service.DocInfoService;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,10 +14,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/info")
-public class MedInfoController {
+public class DocInfoController {
 
     @Autowired
-    private MedInfoService medInfoService;
+    private DocInfoService docInfoService;
 
     @Autowired
     private UtilFunctions utilFunctions;
@@ -29,7 +29,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Hospital hospital) {
         if (utilFunctions.isAdmin(token)) {
-            Hospital createdHospital = medInfoService.saveHospital(hospital);
+            Hospital createdHospital = docInfoService.saveHospital(hospital);
             return new ApiResponse<>("success", "Hospital added successfully", createdHospital);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
@@ -40,7 +40,7 @@ public class MedInfoController {
     @Operation(summary = "获取医院信息", description = "所有人都能查看医院信息")
     public ApiResponse<Optional<Hospital>> getHospital(
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
-        Optional<Hospital> hospital = medInfoService.getHospitalById(hospitalId);
+        Optional<Hospital> hospital = docInfoService.getHospitalById(hospitalId);
         return new ApiResponse<>("success", "Hospital fetched successfully", hospital);
     }
 
@@ -51,7 +51,7 @@ public class MedInfoController {
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId,
             @RequestBody Hospital updatedHospital) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            Optional<Hospital> hospital = medInfoService.updateHospital(hospitalId, updatedHospital);
+            Optional<Hospital> hospital = docInfoService.updateHospital(hospitalId, updatedHospital);
             return new ApiResponse<>("success", "Hospital updated successfully", hospital);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
@@ -64,7 +64,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
         if (utilFunctions.isAdmin(token)) {
-            boolean result = medInfoService.deleteHospital(hospitalId);
+            boolean result = docInfoService.deleteHospital(hospitalId);
             return new ApiResponse<>("success", "Hospital deleted successfully", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
@@ -78,7 +78,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Department department) {
         if (utilFunctions.isAdmin(token)) {
-            Department createdDepartment = medInfoService.saveDepartment(department);
+            Department createdDepartment = docInfoService.saveDepartment(department);
             return new ApiResponse<>("success", "Department added successfully", createdDepartment);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
@@ -89,7 +89,7 @@ public class MedInfoController {
     @Operation(summary = "获取科室信息", description = "所有人都能查看科室信息")
     public ApiResponse<Optional<Department>> getDepartment(
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId) {
-        Optional<Department> department = medInfoService.getDepartmentById(departmentId);
+        Optional<Department> department = docInfoService.getDepartmentById(departmentId);
         return new ApiResponse<>("success", "Department fetched successfully", department);
     }
 
@@ -100,7 +100,7 @@ public class MedInfoController {
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId,
             @RequestBody Department updatedDepartment) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            Optional<Department> department = medInfoService.updateDepartment(departmentId, updatedDepartment);
+            Optional<Department> department = docInfoService.updateDepartment(departmentId, updatedDepartment);
             return new ApiResponse<>("success", "Department updated successfully", department);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
@@ -113,7 +113,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId) {
         if (utilFunctions.isAdmin(token)) {
-            boolean result = medInfoService.deleteDepartment(departmentId);
+            boolean result = docInfoService.deleteDepartment(departmentId);
             return new ApiResponse<>("success", "Department deleted successfully", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
@@ -127,7 +127,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Doctor doctor) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            Doctor createdDoctor = medInfoService.saveDoctor(doctor);
+            Doctor createdDoctor = docInfoService.saveDoctor(doctor);
             return new ApiResponse<>("success", "Doctor added successfully", createdDoctor);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
@@ -138,7 +138,7 @@ public class MedInfoController {
     @Operation(summary = "获取医生信息", description = "所有人都能查看医生信息")
     public ApiResponse<Optional<Doctor>> getDoctor(
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
-        Optional<Doctor> doctor = medInfoService.getDoctorById(doctorId);
+        Optional<Doctor> doctor = docInfoService.getDoctorById(doctorId);
         return new ApiResponse<>("success", "Doctor fetched successfully", doctor);
     }
 
@@ -149,7 +149,7 @@ public class MedInfoController {
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId,
             @RequestBody Doctor updatedDoctor) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            Optional<Doctor> doctor = medInfoService.updateDoctor(doctorId, updatedDoctor);
+            Optional<Doctor> doctor = docInfoService.updateDoctor(doctorId, updatedDoctor);
             return new ApiResponse<>("success", "Doctor updated successfully", doctor);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
@@ -162,7 +162,7 @@ public class MedInfoController {
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
         if (utilFunctions.isAdmin(token)) {
-            boolean result = medInfoService.deleteDoctor(doctorId);
+            boolean result = docInfoService.deleteDoctor(doctorId);
             return new ApiResponse<>("success", "Doctor deleted successfully", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
@@ -174,7 +174,7 @@ public class MedInfoController {
     @Operation(summary = "获取科室中的所有医生", description = "所有人都能查看科室中的所有医生")
     public ApiResponse<List<Doctor>> getDoctorsByDepartment(
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId) {
-        List<Doctor> doctors = medInfoService.getDoctorsByDepartment(departmentId);
+        List<Doctor> doctors = docInfoService.getDoctorsByDepartment(departmentId);
         return new ApiResponse<>("success", "Doctors fetched successfully", doctors);
     }
 
@@ -182,7 +182,7 @@ public class MedInfoController {
     @Operation(summary = "获取医院中的所有科室", description = "所有人都能查看医院中的所有科室")
     public ApiResponse<List<Department>> getDepartmentsByHospital(
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
-        List<Department> departments = medInfoService.getDepartmentsByHospital(hospitalId);
+        List<Department> departments = docInfoService.getDepartmentsByHospital(hospitalId);
         return new ApiResponse<>("success", "Departments fetched successfully", departments);
     }
 
@@ -190,7 +190,7 @@ public class MedInfoController {
     @Operation(summary = "获取医生中的所有病人", description = "所有人都能查看医院中的所有病人")
     public ApiResponse<List<Patient>> getPatientsByDoctor(
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
-        List<Patient> patients = medInfoService.getPatientsByDoctor(doctorId);
+        List<Patient> patients = docInfoService.getPatientsByDoctor(doctorId);
         return new ApiResponse<>("success", "Doctors fetched successfully", patients);
     }
 }

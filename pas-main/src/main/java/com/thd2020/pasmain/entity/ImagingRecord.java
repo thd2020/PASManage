@@ -3,6 +3,7 @@ package com.thd2020.pasmain.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,11 +40,15 @@ public class ImagingRecord {
     @Schema(description = "图像IDs")
     private List<Image> images;
 
-    @Column(nullable = false)
+    @Transient
+    @Schema(description = "图像资源")
+    private List<Resource> imageResources;
+
+    @Column
     @Schema(description = "图像数目", example = "10")
     private int imageCount;
 
-    @Column(nullable = false)
+    @Column
     @Schema(description = "标注图像数目", example = "5")
     private int labelCount;
 

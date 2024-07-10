@@ -3,6 +3,7 @@ package com.thd2020.pasmain.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.core.io.Resource;
 
 import java.time.LocalDateTime;
 
@@ -26,22 +27,30 @@ public class PlacentaSegmentationGrading {
     @Schema(description = "掩膜ID", example = "1")
     private Mask mask;
 
+    @Transient
+    @Schema(description = "图像文件", example = "1")
+    private Resource imageResource;
+
+    @Transient
+    @Schema(description = "掩膜文件", example = "1")
+    private Resource maskResource;
+
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
     @Schema(description = "患者ID", example = "1")
     private Patient patient;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     @Schema(description = "分级结果", example = "normal")
     private Grade grade;
 
-    @Column(nullable = false, precision = 5, scale = 4)
+    @Column(precision = 5)
     @Schema(description = "概率", example = "0.95")
     private float probability;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     @Schema(description = "总体分级结果", example = "normal")
     private Grade overallGrade;
 

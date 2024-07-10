@@ -3,6 +3,7 @@ package com.thd2020.pasmain.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.core.io.Resource;
 
 import java.util.List;
 
@@ -33,6 +34,10 @@ public class Image {
     @Column(nullable = false, length = 255)
     @Schema(description = "图像文件路径", example = "/path/to/image123.jpg")
     private String imagePath;
+
+    @Transient
+    @Schema(description = "图像文件")
+    private Resource imageResource;
 
     @OneToMany(mappedBy = "image", cascade = CascadeType.ALL)
     @Schema(description = "掩膜IDs")
