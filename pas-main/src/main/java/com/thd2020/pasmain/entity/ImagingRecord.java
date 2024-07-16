@@ -1,5 +1,8 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -20,6 +23,8 @@ public class ImagingRecord {
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "患者ID", example = "1")
     private Patient patient;
 
@@ -37,6 +42,8 @@ public class ImagingRecord {
     private String resultDescription;
 
     @OneToMany(mappedBy = "imagingRecord", cascade = CascadeType.ALL)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "imageId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "图像IDs")
     private List<Image> images;
 

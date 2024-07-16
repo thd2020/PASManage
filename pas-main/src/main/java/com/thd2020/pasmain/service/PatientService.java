@@ -6,6 +6,7 @@ import com.thd2020.pasmain.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,12 +23,11 @@ public class PatientService {
         return patientRepository.save(patient);
     }
 
-    public ApiResponse<Patient> getPatient(Long patientId) {
-        Optional<Patient> patient = patientRepository.findById(patientId);
-        return patient.map(value -> new ApiResponse<>("success", "Patient fetched successfully", value)).orElseGet(() -> new ApiResponse<>("error", "Patient not found", null));
+    public Patient getPatient(Long patientId) {
+        return patientRepository.findById(patientId).isPresent()?patientRepository.findById(patientId).get():null;
     }
 
-    public ApiResponse<Patient> updatePatient(Long patientId, Patient updatedPatient) {
+    public Patient updatePatient(Long patientId, Patient updatedPatient) {
         Optional<Patient> existingPatient = patientRepository.findById(patientId);
         if (existingPatient.isPresent()) {
             Patient patient = existingPatient.get();
@@ -35,19 +35,26 @@ public class PatientService {
             patient.setGender(updatedPatient.getGender());
             patient.setBirthDate(updatedPatient.getBirthDate());
             patient.setAddress(updatedPatient.getAddress());
-            patientRepository.save(patient);
-            return new ApiResponse<>("success", "Patient updated successfully", patient);
+            return patientRepository.save(patient);
         } else {
-            return new ApiResponse<>("error", "Patient not found", null);
+            return null;
         }
     }
 
-    public ApiResponse<String> deletePatient(Long patientId) {
+    public int deletePatient(Long patientId) {
         if (patientRepository.existsById(patientId)) {
             patientRepository.deleteById(patientId);
-            return new ApiResponse<>("success", "Patient deleted successfully", null);
+            return 0;
         } else {
-            return new ApiResponse<>("error", "Patient not found", null);
+            return -1;
         }
+    }
+
+    public List<Patient> findPatientByName(String name) {
+        return patientRepository.findByName(name);
+    }
+
+    public Patient findPatientByPassId(String passId) {
+        return patientRepository.findByPassId(passId);
     }
 }

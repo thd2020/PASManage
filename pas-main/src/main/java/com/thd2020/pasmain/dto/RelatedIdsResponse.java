@@ -16,4 +16,5 @@ public class RelatedIdsResponse {
     private List<Long> medicalRecordIds;
     private List<Long> surgeryAndBloodTestIds;
     private List<Long> ultrasoundScoreIds;
+    private List<Long> imagingRecordIds;
 }

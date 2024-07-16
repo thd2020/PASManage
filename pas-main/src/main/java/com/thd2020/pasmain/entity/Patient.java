@@ -1,5 +1,8 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -13,7 +16,7 @@ public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "患者ID", example = "1")
+    @Schema(description = "患者ID")
     private Long patientId;
 
     @Column(nullable = false, length = 20)
@@ -21,7 +24,9 @@ public class Patient {
     private String passId;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "关联的用户ID", example = "2")
     private User user;
 
@@ -44,7 +49,9 @@ public class Patient {
 
     @ManyToOne
     @JoinColumn(name = "doctor_id")
-    @Schema(description = "关联的医生ID", example = "3")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "关联的医生ID")
     private Doctor doctor;
 
     public enum Gender {

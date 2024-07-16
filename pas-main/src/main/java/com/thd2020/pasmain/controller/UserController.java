@@ -51,6 +51,7 @@ public class UserController {
 
     @Autowired
     private UtilFunctions utilFunctions;
+    private ImagingService imagingService;
 
     // 用户注册
     @PostMapping("/register")
@@ -300,7 +301,7 @@ public class UserController {
     }
 
     @GetMapping("/related-ids/{userId}")
-    @Operation(summary = "通过用户ID查询相关记录ID", description = "允许管理员通过用户ID查询Patient的patientId，MedicalRecord的RecordId，SurgeryAndBloodTest的RecordId，以及UltrasoundScore的ScoreId")
+    @Operation(summary = "通过用户ID查询相关记录ID", description = "允许管理员通过用户ID查询Patient的patientId，MedicalRecord的RecordId，SurgeryAndBloodTest的RecordId，以及UltrasoundScore的ScoreId，以及ImagingRecord的recordId")
     public ApiResponse<RelatedIdsResponse> getRelatedIdsByUserId(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
@@ -308,10 +309,12 @@ public class UserController {
         if (utilFunctions.isAdmin(token)) {
             Optional<Patient> patient = patientService.findPatientByUserId(userId);
             if (patient.isPresent()) {
-                List<Long> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patient.get().getPatientId());
-                List<Long> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patient.get().getPatientId());
-                List<Long> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patient.get().getPatientId());
-                RelatedIdsResponse response = new RelatedIdsResponse(patient.get().getPatientId(), medicalRecordIds, surgeryAndBloodTestIds, ultrasoundScoreIds);
+                Long patientId = patient.get().getPatientId();
+                List<Long> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+                List<Long> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patientId);
+                List<Long> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patientId);
+                List<Long> imagingRecordIds = imagingService.findImagingRecordIds(patientId);
+                RelatedIdsResponse response = new RelatedIdsResponse(patient.get().getPatientId(), medicalRecordIds, surgeryAndBloodTestIds, ultrasoundScoreIds, imagingRecordIds);
                 return new ApiResponse<>("success", "Related IDs fetched successfully", response);
             }
             else {
@@ -319,6 +322,18 @@ public class UserController {
             }
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
+        }
+    }
+
+    @Operation(summary = "查询用户的ID", description = "根据用户ID查询对应的患者ID或医生ID")
+    @GetMapping("/{userId}/details")
+    public ApiResponse<?> getUserDetails(
+            @Parameter(description = "用户ID", required = true) @PathVariable Long userId,
+            @RequestHeader("Authorization") String token) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, userId)) {
+            return userService.getUserDetails(userId);
+        } else {
+            return new ApiResponse<>("error", "Unauthorized", null);
         }
     }
 }

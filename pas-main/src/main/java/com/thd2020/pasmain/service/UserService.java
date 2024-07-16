@@ -1,6 +1,12 @@
 package com.thd2020.pasmain.service;
 
+import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.OAuthRequest;
+import com.thd2020.pasmain.entity.Doctor;
+import com.thd2020.pasmain.entity.Patient;
+import com.thd2020.pasmain.repository.DoctorRepository;
+import com.thd2020.pasmain.repository.PatientRepository;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -8,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.repository.UserRepository;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -19,6 +27,12 @@ import java.util.stream.Collectors;
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PatientRepository patientRepository;
+
+    @Autowired
+    private DoctorRepository doctorRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -184,5 +198,31 @@ public class UserService {
     public Long findUserIdsByUsername(String username) {
         Optional<User> user = userRepository.findByUsername(username);
         return user.map(User::getUserId).orElse(null);
+    }
+
+    public ApiResponse<?> getUserDetails(Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (user.getRole() == User.Role.PATIENT) {
+                Optional<Patient> patientOpt = patientRepository.findByUser_UserId(userId);
+                if (patientOpt.isPresent()) {
+                    return new ApiResponse<>("success", "Patient found", patientOpt.get());
+                } else {
+                    return new ApiResponse<>("error", "Patient not found", null);
+                }
+            } else if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
+                Optional<Doctor> doctorOpt = doctorRepository.findByUser_UserId(userId);
+                if (doctorOpt.isPresent()) {
+                    return new ApiResponse<>("success", "Doctor found", doctorOpt.get());
+                } else {
+                    return new ApiResponse<>("error", "Doctor not found", null);
+                }
+            } else {
+                return new ApiResponse<>("error", "User is neither a patient nor a doctor", null);
+            }
+        } else {
+            return new ApiResponse<>("error", "User not found", null);
+        }
     }
 }

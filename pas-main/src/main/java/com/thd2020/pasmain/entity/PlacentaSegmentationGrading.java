@@ -1,5 +1,8 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -19,11 +22,15 @@ public class PlacentaSegmentationGrading {
 
     @ManyToOne
     @JoinColumn(name = "image_id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "imageId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "图像ID", example = "1")
     private Image image;
 
     @ManyToOne
     @JoinColumn(name = "mask_id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "maskId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "掩膜ID", example = "1")
     private Mask mask;
 
@@ -37,6 +44,8 @@ public class PlacentaSegmentationGrading {
 
     @ManyToOne
     @JoinColumn(name = "patient_id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
+    @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "患者ID", example = "1")
     private Patient patient;
 

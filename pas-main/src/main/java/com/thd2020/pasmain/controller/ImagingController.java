@@ -87,10 +87,10 @@ public class ImagingController {
     }
 
     @Operation(summary = "添加图像", description = "管理员和医生可以添加图像")
-    @PostMapping("/images")
-    public ApiResponse<Image> addImage(
+    @PostMapping(value = "/images", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<?> addImage(
             @Parameter(description = "要添加进的检测记录id", required = true) @RequestParam String recordId,
-            @Parameter(description = "图像实体", required = true) @RequestBody MultipartFile image,
+            @Parameter(description = "图像实体", required = true) @RequestPart("file") MultipartFile image,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             return imagingService.addImage(recordId, image);
@@ -143,12 +143,12 @@ public class ImagingController {
     }
 
     @Operation(summary = "添加掩膜", description = "管理员和医生可以添加掩膜")
-    @PostMapping("/masks")
-    public ApiResponse<Mask> addMask(
+    @PostMapping(value = "/masks", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<?> addMask(
             @Parameter(description = "对应的图像id", required = true) @RequestParam Long imageId,
             @Parameter(description = "图像来源:DOCTOR or MODEL", required = true) @RequestParam String source,
-            @Parameter(description = "掩膜实体", required = true) @RequestBody MultipartFile mask,
-            @Parameter(description = "掩膜json实体", required = true) @RequestBody MultipartFile segmentationJson,
+            @Parameter(description = "掩膜实体", required = true)  @RequestPart("file") MultipartFile mask,
+            @Parameter(description = "掩膜json实体", required = true)  @RequestPart("json_file") MultipartFile segmentationJson,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             return imagingService.addMask(imageId, mask, segmentationJson, source);

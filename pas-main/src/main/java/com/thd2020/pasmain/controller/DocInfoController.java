@@ -25,12 +25,17 @@ public class DocInfoController {
     // Hospital endpoints
     @PostMapping("/hospitals")
     @Operation(summary = "添加医院信息", description = "仅管理员可以添加医院信息")
-    public ApiResponse<Hospital> addHospital(
+    public ApiResponse<?> addHospital(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Hospital hospital) {
         if (utilFunctions.isAdmin(token)) {
-            Hospital createdHospital = docInfoService.saveHospital(hospital);
-            return new ApiResponse<>("success", "Hospital added successfully", createdHospital);
+            try {
+                Hospital createdHospital = docInfoService.saveHospital(hospital);
+                return new ApiResponse<>("success", "Hospital added successfully", createdHospital);
+            }
+            catch(Exception e) {
+                return new ApiResponse<>("failure", "added failed", e);
+            }
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
         }

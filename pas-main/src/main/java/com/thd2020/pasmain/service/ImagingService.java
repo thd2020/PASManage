@@ -35,7 +35,11 @@ public class ImagingService {
     @Autowired
     private PatientRepository patientRepository;
 
-    private final Path rootLocation = Paths.get("upload-dir");
+    private final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
+
+    public List<Long> findImagingRecordIds(Long patientId) {
+        return imagingRecordRepository.findByPatient_PatientId(patientId);
+    }
 
     public ApiResponse<ImagingRecord> addImagingRecord(ImagingRecord imagingRecord) {
         try {
@@ -81,12 +85,15 @@ public class ImagingService {
         }).orElseGet(() -> new ApiResponse<>("error", "Imaging record not found", null));
     }
 
-    public ApiResponse<Image> addImage(String recordId, MultipartFile file) {
+    public ApiResponse<?> addImage(String recordId, MultipartFile file) {
         try {
             Optional<ImagingRecord> record = imagingRecordRepository.findById(recordId);
             if (record.isPresent()) {
                 String filename = file.getOriginalFilename();
-                Files.copy(file.getInputStream(), this.rootLocation.resolve(filename));
+                Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
+                Files.createDirectories(imageLocation);
+                assert filename != null;
+                Files.copy(file.getInputStream(), imageLocation.resolve(filename));
                 Image image = new Image();
                 image.setImagingRecord(record.get());
                 image.setPatient(record.get().getPatient());
@@ -98,7 +105,30 @@ public class ImagingService {
                 return new ApiResponse<>("error", "Imaging record not found", null);
             }
         } catch (IOException e) {
-            return new ApiResponse<>("error", "Failed to add image", null);
+            return new ApiResponse<>("error", "Failed to add image", e);
+        }
+    }
+
+    public ApiResponse<?> addImageByPatient(Long patientId, MultipartFile file) {
+        try {
+            Optional<Patient> patient = patientRepository.findById(patientId);
+            if (patient.isPresent()) {
+                String filename = file.getOriginalFilename();
+                Path imageLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), "images");
+                Files.createDirectories(imageLocation);
+                assert filename != null;
+                Files.copy(file.getInputStream(), imageLocation.resolve(filename));
+                Image image = new Image();
+                image.setPatient(patient.get());
+                image.setImageName(filename);
+                image.setImagePath(this.rootLocation.resolve(filename).toString());
+                Image savedImage = imageRepository.save(image);
+                return new ApiResponse<>("success", "Image added successfully", savedImage);
+            } else {
+                return new ApiResponse<>("error", "Patient ID not found", null);
+            }
+        } catch (IOException e) {
+            return new ApiResponse<>("error", "Failed to add image", e);
         }
     }
 
@@ -140,20 +170,24 @@ public class ImagingService {
         }).orElseGet(() -> new ApiResponse<>("error", "Image not found", null));
     }
 
-    public ApiResponse<Mask> addMask(Long imageId, MultipartFile file, MultipartFile segmentationJson, String source) {
+    public ApiResponse<?> addMask(Long imageId, MultipartFile file, MultipartFile segmentationJson, String source) {
         try {
             Optional<Image> image = imageRepository.findById(imageId);
             if (image.isPresent()) {
                 String filename = file.getOriginalFilename();
                 assert filename != null;
-                Files.copy(file.getInputStream(), this.rootLocation.resolve(filename));
-                String jsonname = segmentationJson.getOriginalFilename();
-                assert jsonname != null;
-                Files.copy(segmentationJson.getInputStream(), this.rootLocation.resolve(jsonname));
+                String recordId = image.get().getImagingRecord().getRecordId();
+                Long patientId = image.get().getPatient().getPatientId();
+                Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
+                Files.createDirectories(maskLocation);
+                Files.copy(file.getInputStream(), maskLocation.resolve(filename));
+                String jsonName = segmentationJson.getOriginalFilename();
+                assert jsonName != null;
+                Files.copy(segmentationJson.getInputStream(), maskLocation.resolve(jsonName));
                 Mask mask = new Mask();
                 mask.setImage(image.get());
-                mask.setSegmentationMaskPath(this.rootLocation.resolve(filename).toString());
-                mask.setSegmentationJsonPath(this.rootLocation.resolve(jsonname).toString());
+                mask.setSegmentationMaskPath(maskLocation.resolve(filename).toString());
+                mask.setSegmentationJsonPath(maskLocation.resolve(jsonName).toString());
                 mask.setSegmentationSource(Mask.SegmentationSource.valueOf(source));
                 Mask savedMask = maskRepository.save(mask);
                 return new ApiResponse<>("success", "Mask added successfully", savedMask);
@@ -161,7 +195,7 @@ public class ImagingService {
                 return new ApiResponse<>("error", "Image not found", null);
             }
         } catch (IOException e) {
-            return new ApiResponse<>("error", "Failed to add mask", null);
+            return new ApiResponse<>("error", "Failed to add mask", e);
         }
     }
 
