@@ -2,6 +2,7 @@ package com.thd2020.pasmain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -22,10 +23,11 @@ public class ImagingRecord {
     private String recordId;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "患者ID", example = "1")
+    @Schema(description = "患者ID")
     private Patient patient;
 
     @Enumerated(EnumType.STRING)

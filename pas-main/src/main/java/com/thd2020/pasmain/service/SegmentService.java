@@ -1,6 +1,7 @@
 package com.thd2020.pasmain.service;
 
 import ai.onnxruntime.*;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -15,7 +16,14 @@ import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.commons.io.FilenameUtils;
 
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import javax.imageio.ImageIO;
+
+import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 
 @Service
 public class SegmentService {
@@ -31,6 +39,11 @@ public class SegmentService {
     private final OrtEnvironment env;
     private final OrtSession encoderSession;
     private final OrtSession decoderSession;
+
+
+    private final float[] pixelMean = {123.675f, 116.28f, 103.53f};
+    private final float[] pixelStd = {58.395f, 57.12f, 57.375f};
+    private final Size inputSize = new Size(256, 256);
 
     public SegmentService() throws OrtException, IOException {
         env = OrtEnvironment.getEnvironment();
@@ -62,10 +75,44 @@ public class SegmentService {
         return result;
     }
 
+    public float[][][][] transform(Mat img) {
+        // BGR -> RGB
+        Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2RGB);
+
+        // Normalization
+        for (int i = 0; i < img.rows(); i++) {
+            for (int j = 0; j < img.cols(); j++) {
+                double[] pixel = img.get(i, j);
+                pixel[0] = (pixel[0] - pixelMean[0]) / pixelStd[0];
+                pixel[1] = (pixel[1] - pixelMean[1]) / pixelStd[1];
+                pixel[2] = (pixel[2] - pixelMean[2]) / pixelStd[2];
+                img.put(i, j, pixel);
+            }
+        }
+
+        // Resize
+        Imgproc.resize(img, img, inputSize, 0, 0, Imgproc.INTER_NEAREST);
+
+        // HWC -> CHW
+        float[][][][] nchwImage = new float[1][3][(int) inputSize.height][(int) inputSize.width];
+        for (int i = 0; i < inputSize.height; i++) {
+            for (int j = 0; j < inputSize.width; j++) {
+                double[] pixel = img.get(i, j);
+                nchwImage[0][0][i][j] = (float) pixel[0];
+                nchwImage[0][1][i][j] = (float) pixel[1];
+                nchwImage[0][2][i][j] = (float) pixel[2];
+            }
+        }
+
+        return nchwImage;
+    }
+
     public String segmentImage(String patientId, String recordId, String imagePath, String segmentationType, Map<String, Object> coordinates) throws OrtException, IOException {
         // Load image
         BufferedImage image = ImageIO.read(new File(imagePath));
-        float[][][][] imageData = convertImageToFloatTensor(image);
+        //float[][][][] imageData = convertImageToFloatTensor(image);
+        Mat img = Imgcodecs.imread(imagePath);
+        float[][][][] imageData = transform(img);
         float[][][] test = imageData[0];
         OnnxTensor inputTensor = OnnxTensor.createTensor(env, imageData);
 

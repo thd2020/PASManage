@@ -22,7 +22,7 @@ public class Mask {
     @JoinColumn(name = "image_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "imageId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "图像ID", example = "1")
+    @Schema(description = "图像ID")
     private Image image;
 
     @Column(nullable = false, length = 255)

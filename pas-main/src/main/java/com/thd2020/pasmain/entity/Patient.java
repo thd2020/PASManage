@@ -2,6 +2,7 @@ package com.thd2020.pasmain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -16,7 +17,7 @@ public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "患者ID")
+    @Schema(description = "患者ID", example = "1")
     private Long patientId;
 
     @Column(nullable = false, length = 20)
@@ -48,6 +49,7 @@ public class Patient {
     private String address;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "doctor_id")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
     @JsonIdentityReference(alwaysAsId = true)

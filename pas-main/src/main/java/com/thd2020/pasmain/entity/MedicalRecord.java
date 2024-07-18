@@ -23,7 +23,7 @@ public class MedicalRecord {
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "关联的患者ID", example = "1")
+    @Schema(description = "关联的患者ID")
     private Patient patient;
 
     @Column(nullable = false)
@@ -123,7 +123,7 @@ public class MedicalRecord {
 
     @ManyToOne
     @JoinColumn(name = "doctor_id")
-    @Schema(description = "关联的医生ID", example = "1")
+    @Schema(description = "关联的医生ID")
     private Doctor doctor;
 
     @Lob

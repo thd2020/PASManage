@@ -21,7 +21,7 @@ import lombok.Data;
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "关联的患者ID", example = "1")
+    @Schema(description = "关联的患者ID")
     private Patient patient;
 
     @Schema(description = "分娩孕周", example = "39")

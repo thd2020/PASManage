@@ -17,21 +17,21 @@ public class PlacentaSegmentationGrading {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "分割/分级结果ID", example = "1")
+    @Schema(description = "分割/分级结果ID")
     private Long segGradeId;
 
     @ManyToOne
     @JoinColumn(name = "image_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "imageId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "图像ID", example = "1")
+    @Schema(description = "图像ID")
     private Image image;
 
     @ManyToOne
     @JoinColumn(name = "mask_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "maskId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "掩膜ID", example = "1")
+    @Schema(description = "掩膜ID")
     private Mask mask;
 
     @Transient
@@ -46,7 +46,7 @@ public class PlacentaSegmentationGrading {
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "患者ID", example = "1")
+    @Schema(description = "患者ID")
     private Patient patient;
 
     @Enumerated(EnumType.STRING)

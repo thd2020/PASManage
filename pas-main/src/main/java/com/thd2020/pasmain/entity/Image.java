@@ -31,7 +31,7 @@ public class Image {
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "患者ID", example = "1")
+    @Schema(description = "患者ID")
     private Patient patient;
 
     @Column(nullable = false, length = 255)
