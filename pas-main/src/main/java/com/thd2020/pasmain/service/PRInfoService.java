@@ -63,7 +63,7 @@ public class PRInfoService {
         medicalRecordRepository.delete(medicalRecord);
     }
 
-    public List<Long> findMedicalRecordIdsByPatientId(Long patientId) {
+    public List<MedicalRecord> findMedicalRecordIdsByPatientId(Long patientId) {
         return medicalRecordRepository.findByPatient_PatientId(patientId);
     }
 
@@ -97,7 +97,7 @@ public class PRInfoService {
         surgeryAndBloodTestRepository.delete(surgeryAndBloodTest);
     }
 
-    public List<Long> findSBRecordIdsByPatientId(Long patientId) {
+    public List<SurgeryAndBloodTest> findSBRecordIdsByPatientId(Long patientId) {
         return surgeryAndBloodTestRepository.findByPatient_PatientId(patientId);
     }
 
@@ -130,7 +130,7 @@ public class PRInfoService {
         ultrasoundScoreRepository.delete(ultrasoundScore);
     }
 
-    public List<Long> findScoreIdsByPatientId(Long patientId) {
+    public List<UltrasoundScore> findScoreIdsByPatientId(Long patientId) {
         return ultrasoundScoreRepository.findByPatient_PatientId(patientId);
     }
 }

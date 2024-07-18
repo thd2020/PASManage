@@ -9,10 +9,12 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +39,7 @@ public class ImagingService {
 
     private final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
 
-    public List<Long> findImagingRecordIds(Long patientId) {
+    public List<ImagingRecord> findImagingRecordIds(Long patientId) {
         return imagingRecordRepository.findByPatient_PatientId(patientId);
     }
 
@@ -85,50 +87,40 @@ public class ImagingService {
         }).orElseGet(() -> new ApiResponse<>("error", "Imaging record not found", null));
     }
 
-    public ApiResponse<?> addImage(String recordId, MultipartFile file) {
-        try {
-            Optional<ImagingRecord> record = imagingRecordRepository.findById(recordId);
-            if (record.isPresent()) {
-                String filename = file.getOriginalFilename();
-                Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
-                Files.createDirectories(imageLocation);
-                assert filename != null;
-                Files.copy(file.getInputStream(), imageLocation.resolve(filename));
-                Image image = new Image();
-                image.setImagingRecord(record.get());
-                image.setPatient(record.get().getPatient());
-                image.setImageName(filename);
-                image.setImagePath(this.rootLocation.resolve(filename).toString());
-                Image savedImage = imageRepository.save(image);
-                return new ApiResponse<>("success", "Image added successfully", savedImage);
-            } else {
-                return new ApiResponse<>("error", "Imaging record not found", null);
-            }
-        } catch (IOException e) {
-            return new ApiResponse<>("error", "Failed to add image", e);
+    public Image addImage(String recordId, MultipartFile file) throws IOException {
+        Optional<ImagingRecord> record = imagingRecordRepository.findById(recordId);
+        if (record.isPresent()) {
+            String filename = file.getOriginalFilename();
+            Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
+            Files.createDirectories(imageLocation);
+            assert filename != null;
+            Files.copy(file.getInputStream(), imageLocation.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+            Image image = new Image();
+            image.setImagingRecord(record.get());
+            image.setPatient(record.get().getPatient());
+            image.setImageName(filename);
+            image.setImagePath(imageLocation.resolve(filename).toString());
+            return imageRepository.save(image);
+        } else {
+            return null;
         }
     }
 
-    public ApiResponse<?> addImageByPatient(Long patientId, MultipartFile file) {
-        try {
-            Optional<Patient> patient = patientRepository.findById(patientId);
-            if (patient.isPresent()) {
-                String filename = file.getOriginalFilename();
-                Path imageLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), "images");
-                Files.createDirectories(imageLocation);
-                assert filename != null;
-                Files.copy(file.getInputStream(), imageLocation.resolve(filename));
-                Image image = new Image();
-                image.setPatient(patient.get());
-                image.setImageName(filename);
-                image.setImagePath(this.rootLocation.resolve(filename).toString());
-                Image savedImage = imageRepository.save(image);
-                return new ApiResponse<>("success", "Image added successfully", savedImage);
-            } else {
-                return new ApiResponse<>("error", "Patient ID not found", null);
-            }
-        } catch (IOException e) {
-            return new ApiResponse<>("error", "Failed to add image", e);
+    public Image addImageByPatient(Long patientId, MultipartFile file) throws IOException {
+        Optional<Patient> patient = patientRepository.findById(patientId);
+        if (patient.isPresent()) {
+            String filename = file.getOriginalFilename();
+            Path imageLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), "images");
+            Files.createDirectories(imageLocation);
+            assert filename != null;
+            Files.copy(file.getInputStream(), imageLocation.resolve(filename));
+            Image image = new Image();
+            image.setPatient(patient.get());
+            image.setImageName(filename);
+            image.setImagePath(this.rootLocation.resolve(filename).toString());
+            return imageRepository.save(image);
+        } else {
+            return null;
         }
     }
 
@@ -196,6 +188,22 @@ public class ImagingService {
             }
         } catch (IOException e) {
             return new ApiResponse<>("error", "Failed to add mask", e);
+        }
+    }
+
+    public Mask addMask(Long imageId, Path maskLocation, String source) throws IOException {
+        Optional<Image> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            String recordId = image.get().getImagingRecord().getRecordId();
+            Long patientId = image.get().getPatient().getPatientId();
+            Files.createDirectories(maskLocation.getParent());
+            Mask mask = new Mask();
+            mask.setImage(image.get());
+            mask.setSegmentationMaskPath(maskLocation.toString());
+            mask.setSegmentationSource(Mask.SegmentationSource.valueOf(source));
+            return maskRepository.save(mask);
+        } else {
+            return null;
         }
     }
 

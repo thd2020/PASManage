@@ -1,13 +1,7 @@
 package com.thd2020.pasmain.service;
 
-import com.thd2020.pasmain.entity.Doctor;
-import com.thd2020.pasmain.entity.Hospital;
-import com.thd2020.pasmain.entity.Department;
-import com.thd2020.pasmain.entity.Patient;
-import com.thd2020.pasmain.repository.DoctorRepository;
-import com.thd2020.pasmain.repository.HospitalRepository;
-import com.thd2020.pasmain.repository.DepartmentRepository;
-import com.thd2020.pasmain.repository.PatientRepository;
+import com.thd2020.pasmain.entity.*;
+import com.thd2020.pasmain.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +10,9 @@ import java.util.Optional;
 
 @Service
 public class DocInfoService {
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private DoctorRepository doctorRepository;
@@ -119,5 +116,9 @@ public class DocInfoService {
 
     public List<Patient> getPatientsByDoctor(Long doctorId) {
         return patientRepository.findByDoctor_DoctorId(doctorId);
+    }
+
+    public List<User> getUsersByHospital(Long hospitalId) {
+        return userRepository.findByHospital_HospitalId(hospitalId);
     }
 }

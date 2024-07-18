@@ -34,7 +34,7 @@ public class DocInfoController {
                 return new ApiResponse<>("success", "Hospital added successfully", createdHospital);
             }
             catch(Exception e) {
-                return new ApiResponse<>("failure", "added failed", e);
+                return new ApiResponse<>("failure", "Hospital added failed", e);
             }
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
@@ -46,7 +46,7 @@ public class DocInfoController {
     public ApiResponse<Optional<Hospital>> getHospital(
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
         Optional<Hospital> hospital = docInfoService.getHospitalById(hospitalId);
-        return new ApiResponse<>("success", "Hospital fetched successfully", hospital);
+        return new ApiResponse<>(hospital.isPresent()?"success":"failure", hospital.isPresent()?"Hospital fetched successfully":"No such hospital", hospital);
     }
 
     @PutMapping("/hospitals/{hospitalId}")
@@ -57,7 +57,7 @@ public class DocInfoController {
             @RequestBody Hospital updatedHospital) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             Optional<Hospital> hospital = docInfoService.updateHospital(hospitalId, updatedHospital);
-            return new ApiResponse<>("success", "Hospital updated successfully", hospital);
+            return new ApiResponse<>(hospital.isPresent()?"success":"failure", hospital.isPresent()?"Hospital updated successfully":"Hospital does not exist", hospital);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
         }
@@ -70,7 +70,7 @@ public class DocInfoController {
             @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
         if (utilFunctions.isAdmin(token)) {
             boolean result = docInfoService.deleteHospital(hospitalId);
-            return new ApiResponse<>("success", "Hospital deleted successfully", result);
+            return new ApiResponse<>(result?"success":"failure", result?"Hospital deleted successfully":"No such hospital", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
         }
@@ -79,12 +79,17 @@ public class DocInfoController {
     // Department endpoints
     @PostMapping("/departments")
     @Operation(summary = "添加科室信息", description = "仅管理员可以添加科室信息")
-    public ApiResponse<Department> addDepartment(
+    public ApiResponse<?> addDepartment(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Department department) {
         if (utilFunctions.isAdmin(token)) {
-            Department createdDepartment = docInfoService.saveDepartment(department);
-            return new ApiResponse<>("success", "Department added successfully", createdDepartment);
+            try {
+                Department createdDepartment = docInfoService.saveDepartment(department);
+                return new ApiResponse<>("success", "Department added successfully", createdDepartment);
+            }
+            catch (Exception e) {
+                return new ApiResponse<>("failure", "department added error", e);
+            }
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
         }
@@ -95,7 +100,7 @@ public class DocInfoController {
     public ApiResponse<Optional<Department>> getDepartment(
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId) {
         Optional<Department> department = docInfoService.getDepartmentById(departmentId);
-        return new ApiResponse<>("success", "Department fetched successfully", department);
+        return new ApiResponse<>(department.isPresent()?"success":"failure", department.isPresent()?"Department fetched successfully":"No such department", department);
     }
 
     @PutMapping("/departments/{departmentId}")
@@ -106,7 +111,7 @@ public class DocInfoController {
             @RequestBody Department updatedDepartment) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             Optional<Department> department = docInfoService.updateDepartment(departmentId, updatedDepartment);
-            return new ApiResponse<>("success", "Department updated successfully", department);
+            return new ApiResponse<>(department.isPresent()?"success":"failure", department.isPresent()?"Department updated successfully":"No such department", department);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
         }
@@ -119,7 +124,7 @@ public class DocInfoController {
             @Parameter(description = "科室ID", required = true) @PathVariable Long departmentId) {
         if (utilFunctions.isAdmin(token)) {
             boolean result = docInfoService.deleteDepartment(departmentId);
-            return new ApiResponse<>("success", "Department deleted successfully", result);
+            return new ApiResponse<>(result?"success":"failure", result?"Department deleted successfully":"No such department", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
         }
@@ -128,12 +133,17 @@ public class DocInfoController {
     // Doctor endpoints
     @PostMapping("/doctors")
     @Operation(summary = "添加医生信息", description = "仅管理员和医生可以添加医生信息")
-    public ApiResponse<Doctor> addDoctor(
+    public ApiResponse<?> addDoctor(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Doctor doctor) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            Doctor createdDoctor = docInfoService.saveDoctor(doctor);
-            return new ApiResponse<>("success", "Doctor added successfully", createdDoctor);
+            try {
+                Doctor createdDoctor = docInfoService.saveDoctor(doctor);
+                return new ApiResponse<>("success", "Doctor added successfully", createdDoctor);
+            }
+            catch (Exception e) {
+                return new ApiResponse<>("failure", "Doctor added error", e);
+            }
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
         }
@@ -144,7 +154,7 @@ public class DocInfoController {
     public ApiResponse<Optional<Doctor>> getDoctor(
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
         Optional<Doctor> doctor = docInfoService.getDoctorById(doctorId);
-        return new ApiResponse<>("success", "Doctor fetched successfully", doctor);
+        return new ApiResponse<>(doctor.isPresent()?"success":"failure", doctor.isPresent()?"Doctor fetched successfully":"No such doctor", doctor);
     }
 
     @PutMapping("/doctors/{doctorId}")
@@ -155,7 +165,7 @@ public class DocInfoController {
             @RequestBody Doctor updatedDoctor) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             Optional<Doctor> doctor = docInfoService.updateDoctor(doctorId, updatedDoctor);
-            return new ApiResponse<>("success", "Doctor updated successfully", doctor);
+            return new ApiResponse<>(doctor.isPresent()?"success":"failure", doctor.isPresent()?"Doctor updated successfully":"No such doctor", doctor);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", Optional.empty());
         }
@@ -168,7 +178,7 @@ public class DocInfoController {
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
         if (utilFunctions.isAdmin(token)) {
             boolean result = docInfoService.deleteDoctor(doctorId);
-            return new ApiResponse<>("success", "Doctor deleted successfully", result);
+            return new ApiResponse<>(result?"success":"failure", result?"Doctor deleted successfully":"No such doctor", result);
         } else {
             return new ApiResponse<>("failure", "Unauthorized", false);
         }
@@ -191,11 +201,24 @@ public class DocInfoController {
         return new ApiResponse<>("success", "Departments fetched successfully", departments);
     }
 
-    @GetMapping("/departments/hospital/{doctorId}")
+    @GetMapping("/patients/doctors/{doctorId}")
     @Operation(summary = "获取医生中的所有病人", description = "所有人都能查看医院中的所有病人")
     public ApiResponse<List<Patient>> getPatientsByDoctor(
             @Parameter(description = "医生ID", required = true) @PathVariable Long doctorId) {
         List<Patient> patients = docInfoService.getPatientsByDoctor(doctorId);
         return new ApiResponse<>("success", "Doctors fetched successfully", patients);
+    }
+
+    @GetMapping("/users/hospierstal/{hospitalId}")
+    @Operation(summary = "获取医院中的所有用户", description = "管理员和医生都能查看医院中的所有用户")
+    public ApiResponse<List<User>> getPatientsByDoctor(
+            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId,
+            @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
+            List<User> users = docInfoService.getUsersByHospital(hospitalId);
+            return new ApiResponse<>("success", "Doctors fetched successfully", users);
+        } else {
+            return new ApiResponse<>("failure", "Unauthorized", null);
+        }
     }
 }

@@ -17,7 +17,7 @@ public class Doctor {
     @Schema(description = "医生ID", example = "1")
     private Long doctorId;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
     @JsonIdentityReference(alwaysAsId = true)

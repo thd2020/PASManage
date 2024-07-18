@@ -30,4 +30,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.phone = :phone")
     Optional<User> findByPhone(@Param("phone") String phone);
+
+    List<User> findByHospital_HospitalId(Long hospitalId);
 }

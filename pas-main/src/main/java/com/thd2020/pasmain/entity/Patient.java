@@ -23,7 +23,7 @@ public class Patient {
     @Schema(description = "身份证号", example = "123456789012345678")
     private String passId;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "user_id", nullable = true)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "userId")
     @JsonIdentityReference(alwaysAsId = true)

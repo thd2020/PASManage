@@ -1,9 +1,15 @@
 package com.thd2020.pasmain.controller;
 
+import ai.onnxruntime.OrtException;
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.entity.*;
+import com.thd2020.pasmain.repository.ImageRepository;
 import com.thd2020.pasmain.repository.ImagingRecordRepository;
+import com.thd2020.pasmain.repository.MaskRepository;
+import com.thd2020.pasmain.repository.PlacentaSegmentationGradingRepository;
 import com.thd2020.pasmain.service.ImagingService;
+import com.thd2020.pasmain.service.PatientService;
+import com.thd2020.pasmain.service.SegmentService;
 import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,31 +17,93 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/imaging")
-@Tag(name = "Imaging Controller", description = "影像模块的接口")
+@Tag(name = "Imaging Controller", description = "影像模块接口")
 public class ImagingController {
 
     @Autowired
     private ImagingService imagingService;
 
     @Autowired
+    private PatientService patientService;
+
+    @Autowired
+    private SegmentService segmentService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
     private UtilFunctions utilFunctions;
+
     @Autowired
     private ImagingRecordRepository imagingRecordRepository;
+
+    @Autowired
+    private ImageRepository imageRepository;
+
+    @Autowired
+    private MaskRepository maskRepository;
+
+    @Autowired
+    private PlacentaSegmentationGradingRepository placentaSegmentationGradingRepository;
+
+
+    @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
+    public ApiResponse<ResponseEntity<Resource>> segmentImage(
+            @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
+            @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
+            @Parameter(description = "分割提示类型", required = true) @RequestParam String hintType,
+            @Parameter(description = "提示坐标", required = false) @RequestParam Map<String, Object> hintCoordinates,
+            @RequestHeader("Authorization") String token) throws IOException, OrtException {
+        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
+            return new ApiResponse<>("error", "Unauthorized", null);
+        }
+        // Step 1: 添加图像记录
+        Image savedImage = imagingService.addImage(recordId, image);
+        if (savedImage == null) {
+            return new ApiResponse<>("error", "Failed to add image", null);
+        }
+        Long imageId = savedImage.getImageId();
+        // Step 2: 图像分割
+        String segmentedImagePath = segmentService.segmentImage(
+                patientId.toString(),
+                recordId,
+                savedImage.getImagePath(),
+                hintType,
+                hintCoordinates
+        );
+        if (segmentedImagePath == null) {
+            return new ApiResponse<>("error", "Failed to segment image", null);
+        }
+        Mask addedMask = imagingService.addMask(imageId, Paths.get(segmentedImagePath), "MODEL");
+        if (addedMask == null) {
+            return new ApiResponse<>("error", "Failed to add mask", null);
+        }
+        ResponseEntity<Resource> responseEntity = ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
+                .body(new UrlResource(segmentedImagePath));
+        return new ApiResponse<>("success", "Image segmented successfully", responseEntity);
+    }
 
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")
     @PostMapping("/records")
@@ -91,9 +159,10 @@ public class ImagingController {
     public ApiResponse<?> addImage(
             @Parameter(description = "要添加进的检测记录id", required = true) @RequestParam String recordId,
             @Parameter(description = "图像实体", required = true) @RequestPart("file") MultipartFile image,
-            @RequestHeader("Authorization") String token) {
+            @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.addImage(recordId, image);
+            Image addedImage = imagingService.addImage(recordId, image);
+            return new ApiResponse<>("success", "Image added successfully", addedImage);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -104,7 +173,7 @@ public class ImagingController {
     public ResponseEntity<Resource> getImage(
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageId)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getPatientId())) {
             ApiResponse<Image> response = imagingService.getImage(imageId);
             if (response.getData() != null) {
                 Image image = response.getData();
@@ -162,7 +231,7 @@ public class ImagingController {
     public ResponseEntity<Resource> getMask(
             @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskId)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskRepository.getReferenceById(maskId).getImage().getPatient().getPatientId())) {
             ApiResponse<Mask> response = imagingService.getMask(maskId);
             if (response.getData() != null) {
                 Mask mask = response.getData();
@@ -219,7 +288,7 @@ public class ImagingController {
     public ApiResponse<PlacentaSegmentationGrading> getGrading(
             @Parameter(description = "分割/分级结果ID", required = true) @PathVariable Long gradingId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, gradingId)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, placentaSegmentationGradingRepository.findById(gradingId).orElseThrow().getPatient().getPatientId())) {
             return imagingService.getGrading(gradingId);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);

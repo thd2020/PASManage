@@ -33,7 +33,7 @@ public class Mask {
     @Schema(description = "掩膜文件")
     private Resource maskResource;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     @Schema(description = "分割json路径", example = "/path/to/mask123.json")
     private String segmentationJsonPath;
 

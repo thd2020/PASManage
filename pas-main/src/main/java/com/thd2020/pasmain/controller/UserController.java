@@ -4,9 +4,7 @@ import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.AuthenticationRequest;
 import com.thd2020.pasmain.dto.JwtResponse;
 import com.thd2020.pasmain.dto.RelatedIdsResponse;
-import com.thd2020.pasmain.entity.User;
-import com.thd2020.pasmain.entity.Patient;
-import com.thd2020.pasmain.entity.Doctor;
+import com.thd2020.pasmain.entity.*;
 import com.thd2020.pasmain.service.*;
 import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
@@ -25,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -51,6 +50,8 @@ public class UserController {
 
     @Autowired
     private UtilFunctions utilFunctions;
+
+    @Autowired
     private ImagingService imagingService;
 
     // 用户注册
@@ -282,12 +283,12 @@ public class UserController {
     }
 
     @GetMapping("/find-by-username")
-    @Operation(summary = "通过用户名查询用户ID", description = "允许管理员通过用户名查询所有对应名字的用户ID")
+    @Operation(summary = "通过用户名查询用户ID", description = "允许管理员,医生通过用户名查询所有对应名字的用户ID")
     public ApiResponse<Long> getUserIdsByUsername(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "用户名", required = true) @RequestParam String username) {
 
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             Long userId = userService.findUserIdsByUsername(username);
             if (userId != null) {
                 return new ApiResponse<>("success", "User IDs fetched successfully", userId);
@@ -301,21 +302,25 @@ public class UserController {
     }
 
     @GetMapping("/related-ids/{userId}")
-    @Operation(summary = "通过用户ID查询相关记录ID", description = "允许管理员通过用户ID查询Patient的patientId，MedicalRecord的RecordId，SurgeryAndBloodTest的RecordId，以及UltrasoundScore的ScoreId，以及ImagingRecord的recordId")
-    public ApiResponse<RelatedIdsResponse> getRelatedIdsByUserId(
+    @Operation(summary = "通过用户ID查询相关记录ID", description = "允许管理员，医生，病人本人通过用户ID查询Patient的patientId，MedicalRecord的RecordId，SurgeryAndBloodTest的RecordId，以及UltrasoundScore的ScoreId，以及ImagingRecord的recordId")
+    public ApiResponse<?> getRelatedIdsByUserId(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
             @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
 
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, userId)) {
             Optional<Patient> patient = patientService.findPatientByUserId(userId);
             if (patient.isPresent()) {
                 Long patientId = patient.get().getPatientId();
-                List<Long> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patientId);
-                List<Long> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patientId);
-                List<Long> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patientId);
-                List<Long> imagingRecordIds = imagingService.findImagingRecordIds(patientId);
-                RelatedIdsResponse response = new RelatedIdsResponse(patient.get().getPatientId(), medicalRecordIds, surgeryAndBloodTestIds, ultrasoundScoreIds, imagingRecordIds);
-                return new ApiResponse<>("success", "Related IDs fetched successfully", response);
+                List<MedicalRecord> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+                List<SurgeryAndBloodTest> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patientId);
+                List<UltrasoundScore> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patientId);
+                List<ImagingRecord> imagingRecordIds = imagingService.findImagingRecordIds(patientId);
+                return new ApiResponse<>("success", "Related IDs fetched successfully", Map.of(
+                        "patientId", patientId,
+                        "MedicalRecordIds", medicalRecordIds,
+                        "surgeryAndBloodTestIds", surgeryAndBloodTestIds,
+                        "ultrasoundScoreIds", ultrasoundScoreIds,
+                        "imagingRecordIds", imagingRecordIds));
             }
             else {
                 return new ApiResponse<>("failure", "No such patient corresponding to this user", null);
@@ -334,6 +339,19 @@ public class UserController {
             return userService.getUserDetails(userId);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
+        }
+    }
+
+    @Operation(summary = "查询token状态", description = "查询token过期状态")
+    @GetMapping("/expired")
+    public ApiResponse<?> getUserDetails(
+            @Parameter(description = "要查询的token", required = true)
+            @RequestParam String token) {
+        try {
+            return new ApiResponse<>("success", "token available", jwtUtil.extractAllClaims(token));
+        }
+        catch (Exception e) {
+            return new ApiResponse<>("failure", "token unavailable", e);
         }
     }
 }

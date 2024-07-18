@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface ImagingRecordRepository extends JpaRepository<ImagingRecord, String> {
-    List<Long> findByPatient_PatientId(Long patientId);
+    List<ImagingRecord> findByPatient_PatientId(Long patientId);
 }

@@ -22,12 +22,12 @@ public class PatientController {
     private UtilFunctions utilFunctions;
 
     @PostMapping
-    @Operation(summary = "添加病人信息", description = "允许管理员添加新的病人信息")
+    @Operation(summary = "添加病人信息", description = "允许管理员和医生添加新的病人信息")
     public ApiResponse<Patient> addPatient(
             @Parameter(description = "JWT token for authentication", required = true)
             @RequestHeader("Authorization") String token,
             @RequestBody Patient patient) {
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             return new ApiResponse<>("success", "Patient added successfully", patientService.addPatient(patient));
         } else {
             return new ApiResponse<>("failure", "Unauthorized", null);
@@ -35,11 +35,11 @@ public class PatientController {
     }
 
     @GetMapping("/{patientId}")
-    @Operation(summary = "获取病人信息", description = "允许管理员获取病人详细信息")
+    @Operation(summary = "获取病人信息", description = "允许管理员，医生和病人本人获取病人详细信息")
     public ApiResponse<Patient> getPatient(
             @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token) {
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             Patient existedPatient = patientService.getPatient(patientId);
             return new ApiResponse<>(existedPatient!=null?"success":"failure", existedPatient!=null?"Patient fetched successfully":"No such patient", existedPatient);
         } else {
@@ -48,12 +48,12 @@ public class PatientController {
     }
 
     @PutMapping("/{patientId}")
-    @Operation(summary = "更新病人信息", description = "允许管理员更新病人信息")
+    @Operation(summary = "更新病人信息", description = "允许管理员,医生和病人本人更新病人信息")
     public ApiResponse<Patient> updatePatient(
             @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Patient updatedPatient) {
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             Patient patient = patientService.updatePatient(patientId, updatedPatient);
             return new ApiResponse<>(patient!=null?"success":"failure", patient!=null?"Patient updated successfully":"No such patient", patient);
         } else {
@@ -62,11 +62,11 @@ public class PatientController {
     }
 
     @DeleteMapping("/{patientId}")
-    @Operation(summary = "删除病人信息", description = "允许管理员删除病人信息")
+    @Operation(summary = "删除病人信息", description = "允许管理员和医生删除病人信息")
     public ApiResponse<String> deletePatient(
             @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token) {
-        if (utilFunctions.isAdmin(token)) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             int code = patientService.deletePatient(patientId);
             return new ApiResponse<>(code==0?"success":"failure", code==0?"Patient deleted successfully":"No such patient", null);
         } else {
