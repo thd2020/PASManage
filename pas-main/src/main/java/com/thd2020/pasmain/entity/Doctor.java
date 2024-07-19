@@ -1,11 +1,11 @@
 package com.thd2020.pasmain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.List;
 
 @Entity
 @Data
@@ -28,6 +28,7 @@ public class Doctor {
     @JoinColumn(name = "department_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "departmentId")
     @JsonIdentityReference(alwaysAsId = true)
+    @JsonBackReference
     @Schema(description = "所属科室")
     private Department department;
 
@@ -38,4 +39,11 @@ public class Doctor {
     @Column(length = 100)
     @Schema(description = "职称", example = "主任医师")
     private String title;
+
+    @OneToMany(mappedBy = "doctor")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @JsonManagedReference
+    @Schema(description = "所管病人")
+    private List<Patient> patients;
 }

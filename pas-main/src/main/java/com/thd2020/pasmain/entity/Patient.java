@@ -1,9 +1,6 @@
 package com.thd2020.pasmain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -49,10 +46,8 @@ public class Patient {
     private String address;
 
     @ManyToOne
-    @JsonIgnore
     @JoinColumn(name = "doctor_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
-    @JsonIdentityReference(alwaysAsId = true)
+    @JsonBackReference
     @Schema(description = "关联的医生ID")
     private Doctor doctor;
 

@@ -208,17 +208,4 @@ public class DocInfoController {
         List<Patient> patients = docInfoService.getPatientsByDoctor(doctorId);
         return new ApiResponse<>("success", "Doctors fetched successfully", patients);
     }
-
-    @GetMapping("/users/hospierstal/{hospitalId}")
-    @Operation(summary = "获取医院中的所有用户", description = "管理员和医生都能查看医院中的所有用户")
-    public ApiResponse<List<User>> getPatientsByDoctor(
-            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId,
-            @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token) {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            List<User> users = docInfoService.getUsersByHospital(hospitalId);
-            return new ApiResponse<>("success", "Doctors fetched successfully", users);
-        } else {
-            return new ApiResponse<>("failure", "Unauthorized", null);
-        }
-    }
 }

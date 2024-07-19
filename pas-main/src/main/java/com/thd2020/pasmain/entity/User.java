@@ -22,20 +22,6 @@ public class User implements UserDetails {
     @Schema(description = "用户ID", example = "1")
     private Long userId;
 
-    @OneToOne
-    @JoinColumn(name = "patient_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
-    @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "关联病人id")
-    private Patient patient;
-
-    @OneToOne
-    @JoinColumn(name = "doctor_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
-    @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "关联医生id")
-    private Doctor doctor;
-
     @Column(nullable = false, length = 50)
     @Schema(description = "用户名", example = "john_doe")
     private String username;
@@ -51,13 +37,6 @@ public class User implements UserDetails {
     @Column(length = 20)
     @Schema(description = "联系电话", example = "1234567890")
     private String phone;
-
-    @ManyToOne
-    @JoinColumn(name = "hospital_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "doctorId")
-    @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "隶属医院id")
-    private Hospital hospital;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

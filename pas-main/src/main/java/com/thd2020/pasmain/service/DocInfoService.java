@@ -117,8 +117,4 @@ public class DocInfoService {
     public List<Patient> getPatientsByDoctor(Long doctorId) {
         return patientRepository.findByDoctor_DoctorId(doctorId);
     }
-
-    public List<User> getUsersByHospital(Long hospitalId) {
-        return userRepository.findByHospital_HospitalId(hospitalId);
-    }
 }

@@ -1,5 +1,6 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -24,6 +25,7 @@ public class Image {
     @JoinColumn(name = "record_id", nullable = true)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "recordId")
     @JsonIdentityReference(alwaysAsId = true)
+    @JsonBackReference
     @Schema(description = "检测记录ID", example = "record123")
     private ImagingRecord imagingRecord;
 

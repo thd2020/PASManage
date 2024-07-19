@@ -1,8 +1,14 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.List;
 
 @Entity
 @Data
@@ -53,4 +59,11 @@ public class Hospital {
     @Column(length = 50)
     @Schema(description = "医院所在区/县", example = "东城区")
     private String district;
+
+    @OneToMany(mappedBy = "hospital")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "departmentId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @JsonManagedReference
+    @Schema(description = "所管科室")
+    private List<Department> departments;
 }

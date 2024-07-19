@@ -107,11 +107,12 @@ public class ImagingController {
 
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")
     @PostMapping("/records")
-    public ApiResponse<ImagingRecord> addImagingRecord(
+    public ApiResponse<?> addImagingRecord(
             @Parameter(description = "影像记录实体", required = true) @RequestBody ImagingRecord imagingRecord,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.addImagingRecord(imagingRecord);
+            ImagingRecord addedImagingRecord = imagingService.addImagingRecord(imagingRecord);
+            return new ApiResponse<>(addedImagingRecord!=null?"success":"failure", addedImagingRecord!=null?"Successfully adding imaging record":"failed to add imaging record", addedImagingRecord);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -123,7 +124,8 @@ public class ImagingController {
             @Parameter(description = "影像记录ID", required = true) @PathVariable String recordId,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getPatientId())) {
-            return imagingService.getImagingRecord(recordId);
+            ImagingRecord gottenImagingRecord = imagingService.getImagingRecord(recordId);
+            return new ApiResponse<>(gottenImagingRecord!=null?"success":"failure", gottenImagingRecord!=null?"Successfully got imaging record":"failed to get imaging record", gottenImagingRecord);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -136,7 +138,8 @@ public class ImagingController {
             @Parameter(description = "更新后的影像记录实体", required = true) @RequestBody ImagingRecord imagingRecord,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getPatientId())) {
-            return imagingService.updateImagingRecord(recordId, imagingRecord);
+            ImagingRecord updatedImagingRecord = imagingService.updateImagingRecord(recordId, imagingRecord);
+            return new ApiResponse<>(updatedImagingRecord!=null?"success":"failure", updatedImagingRecord!=null?"Successfully updated imaging record":"failed to update imaging record", updatedImagingRecord);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -148,7 +151,8 @@ public class ImagingController {
             @Parameter(description = "影像记录ID", required = true) @PathVariable String recordId,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.deleteImagingRecord(recordId);
+            int status = imagingService.deleteImagingRecord(recordId);
+            return new ApiResponse<>(status==0?"success":"failure", status==0?"Successfully deleted imaging record":"failed to delete imaging record", status);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -174,9 +178,8 @@ public class ImagingController {
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getPatientId())) {
-            ApiResponse<Image> response = imagingService.getImage(imageId);
-            if (response.getData() != null) {
-                Image image = response.getData();
+            Image image = imagingService.getImage(imageId);
+            if (image != null) {
                 return ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_JPEG)
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getImageName() + "\"")
@@ -193,7 +196,8 @@ public class ImagingController {
             @Parameter(description = "更新后的图像实体", required = true) @RequestBody Image image,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageId)) {
-            return imagingService.updateImage(imageId, image);
+            Image updatedImage = imagingService.updateImage(imageId, image);
+            return new ApiResponse<>(updatedImage!=null?"success":"failure", updatedImage!=null?"Successfully updated image":"failed to update image", updatedImage);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -205,7 +209,8 @@ public class ImagingController {
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.deleteImage(imageId);
+            int status = imagingService.deleteImage(imageId);
+            return new ApiResponse<>(status==0?"success":"failure", status==0?"Successfully deleted image":"failed to delete image", status);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -217,10 +222,16 @@ public class ImagingController {
             @Parameter(description = "对应的图像id", required = true) @RequestParam Long imageId,
             @Parameter(description = "图像来源:DOCTOR or MODEL", required = true) @RequestParam String source,
             @Parameter(description = "掩膜实体", required = true)  @RequestPart("file") MultipartFile mask,
-            @Parameter(description = "掩膜json实体", required = true)  @RequestPart("json_file") MultipartFile segmentationJson,
-            @RequestHeader("Authorization") String token) {
+            @Parameter(description = "掩膜json实体", required = false)  @RequestPart("json_file") MultipartFile segmentationJson,
+            @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.addMask(imageId, mask, segmentationJson, source);
+            Mask addedMask = null;
+            if (segmentationJson != null) {
+                addedMask = imagingService.addMask(imageId, mask, segmentationJson, source);
+            } else {
+                addedMask = imagingService.addMask(imageId, mask, source);
+            }
+            return new ApiResponse<>("success", "Successfully added mask", addedMask);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -232,9 +243,8 @@ public class ImagingController {
             @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskRepository.getReferenceById(maskId).getImage().getPatient().getPatientId())) {
-            ApiResponse<Mask> response = imagingService.getMask(maskId);
-            if (response.getData() != null) {
-                Mask mask = response.getData();
+            Mask mask = imagingService.getMask(maskId);
+            if (mask != null) {
                 return ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_PNG)
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + mask.getSegmentationMaskPath() + "\"")
@@ -251,7 +261,7 @@ public class ImagingController {
             @Parameter(description = "更新后的掩膜实体", required = true) @RequestBody Mask mask,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskId)) {
-            return imagingService.updateMask(maskId, mask);
+            return new ApiResponse<>("success", "Mask fetched successfully", imagingService.updateMask(maskId, mask));
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -263,7 +273,8 @@ public class ImagingController {
             @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.deleteMask(maskId);
+            int status = imagingService.deleteMask(maskId);
+            return new ApiResponse<>(status==0?"success":"failure", status==0?"successfully deleted mask":"failed to delete mask", status);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -271,13 +282,13 @@ public class ImagingController {
 
     @Operation(summary = "添加分割/分级结果", description = "管理员和医生可以添加分割/分级结果")
     @PostMapping("/gradings")
-    public ApiResponse<PlacentaSegmentationGrading> addGrading(
+    public ApiResponse<?> addGrading(
             @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
             @Parameter(description = "掩膜ID", required = true) @RequestParam Long maskId,
             @Parameter(description = "分割/分级结果实体", required = true) @RequestBody PlacentaSegmentationGrading grading,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.addGrading(imageId, maskId, grading);
+            return new ApiResponse<>("success", "Successfully added sengmentation/grading result", imagingService.addGrading(imageId, maskId, grading));
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -289,7 +300,7 @@ public class ImagingController {
             @Parameter(description = "分割/分级结果ID", required = true) @PathVariable Long gradingId,
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, placentaSegmentationGradingRepository.findById(gradingId).orElseThrow().getPatient().getPatientId())) {
-            return imagingService.getGrading(gradingId);
+            return new ApiResponse<>("success", "Successfully got segmentation/grading result", imagingService.getGrading(gradingId));
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -302,7 +313,7 @@ public class ImagingController {
             @Parameter(description = "更新后的分割/分级结果实体", required = true) @RequestBody PlacentaSegmentationGrading grading,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.updateGrading(gradingId, grading);
+            return new ApiResponse<>("success", "Successfully fetched segmentation/grading result", imagingService.updateGrading(gradingId, grading));
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
@@ -314,7 +325,8 @@ public class ImagingController {
             @Parameter(description = "分割/分级结果ID", required = true) @PathVariable Long gradingId,
             @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
-            return imagingService.deleteGrading(gradingId);
+            int status = imagingService.deleteGrading(gradingId);
+            return new ApiResponse<>(status==0?"success":"failure", status==0?"Successfully deleted grading result":"failed to delete grading result", status);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }

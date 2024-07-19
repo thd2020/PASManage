@@ -11,6 +11,7 @@ import org.springframework.core.io.UrlResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,38 +44,32 @@ public class ImagingService {
         return imagingRecordRepository.findByPatient_PatientId(patientId);
     }
 
-    public ApiResponse<ImagingRecord> addImagingRecord(ImagingRecord imagingRecord) {
-        try {
-            ImagingRecord savedRecord = imagingRecordRepository.save(imagingRecord);
-            return new ApiResponse<>("success", "Imaging record added successfully", savedRecord);
-        } catch (Exception e) {
-            return new ApiResponse<>("error", "Failed to add imaging record", null);
-        }
+    public ImagingRecord addImagingRecord(ImagingRecord imagingRecord) {
+        return imagingRecordRepository.save(imagingRecord);
     }
 
-    public ApiResponse<ImagingRecord> getImagingRecord(String recordId) {
+    public ImagingRecord getImagingRecord(String recordId) {
         Optional<ImagingRecord> record = imagingRecordRepository.findById(recordId);
         if (record.isPresent()) {
             // 获取该记录下所有的影像文件
             List<Image> images = imageRepository.findByImagingRecord_RecordId(recordId);
             record.get().setImages(images);
-            return new ApiResponse<>("success", "Imaging record fetched successfully", record.get());
+            return record.get();
         } else {
-            return new ApiResponse<>("error", "Imaging record not found", null);
+            return null;
         }
     }
 
-    public ApiResponse<ImagingRecord> updateImagingRecord(String recordId, ImagingRecord updatedRecord) {
+    public ImagingRecord updateImagingRecord(String recordId, ImagingRecord updatedRecord) {
         return imagingRecordRepository.findById(recordId).map(record -> {
             record.setTestType(updatedRecord.getTestType());
             record.setTestDate(updatedRecord.getTestDate());
             record.setResultDescription(updatedRecord.getResultDescription());
-            ImagingRecord savedRecord = imagingRecordRepository.save(record);
-            return new ApiResponse<>("success", "Imaging record updated successfully", savedRecord);
-        }).orElseGet(() -> new ApiResponse<>("error", "Imaging record not found", null));
+            return imagingRecordRepository.save(record);
+        }).orElseGet(() -> null);
     }
 
-    public ApiResponse<?> deleteImagingRecord(String recordId) {
+    public int deleteImagingRecord(String recordId) {
         return imagingRecordRepository.findById(recordId).map(record -> {
             // 删除关联的Image和Mask
             List<Image> images = imageRepository.findByImagingRecord_RecordId(recordId);
@@ -83,8 +78,8 @@ public class ImagingService {
                 imageRepository.delete(image);
             }
             imagingRecordRepository.delete(record);
-            return new ApiResponse<>("success", "Imaging record deleted successfully", null);
-        }).orElseGet(() -> new ApiResponse<>("error", "Imaging record not found", null));
+            return 0;
+        }).orElseGet(() -> -1);
     }
 
     public Image addImage(String recordId, MultipartFile file) throws IOException {
@@ -124,70 +119,81 @@ public class ImagingService {
         }
     }
 
-    public ApiResponse<Image> getImage(Long imageId) {
+    public Image getImage(Long imageId) throws MalformedURLException {
         Optional<Image> image = imageRepository.findById(imageId);
         if (image.isPresent()) {
             // 获取图片本身
-            try {
-                Path file = rootLocation.resolve(image.get().getImagePath());
-                Resource resource = new UrlResource(file.toUri());
-                if (resource.exists() || resource.isReadable()) {
-                    image.get().setImageResource(resource);
-                    return new ApiResponse<>("success", "Image fetched successfully", image.get());
-                } else {
-                    return new ApiResponse<>("error", "File not found or not readable", null);
-                }
-            } catch (Exception e) {
-                return new ApiResponse<>("error", "Failed to fetch image", null);
+            Path file = rootLocation.resolve(image.get().getImagePath());
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                image.get().setImageResource(resource);
+                return image.get();
+            } else {
+                return null;
             }
-        } else {
-            return new ApiResponse<>("error", "Image not found", null);
+        }
+        else {
+            return null;
         }
     }
 
-    public ApiResponse<Image> updateImage(Long imageId, Image updatedImage) {
+    public Image updateImage(Long imageId, Image updatedImage) {
         return imageRepository.findById(imageId).map(image -> {
             image.setImageName(updatedImage.getImageName());
             image.setImagePath(updatedImage.getImagePath());
-            Image savedImage = imageRepository.save(image);
-            return new ApiResponse<>("success", "Image updated successfully", savedImage);
-        }).orElseGet(() -> new ApiResponse<>("error", "Image not found", null));
+            return imageRepository.save(image);
+        }).orElseGet(() -> null);
     }
 
-    public ApiResponse<?> deleteImage(Long imageId) {
+    public int deleteImage(Long imageId) {
         return imageRepository.findById(imageId).map(image -> {
             maskRepository.deleteAll(image.getMasks());
             imageRepository.delete(image);
-            return new ApiResponse<>("success", "Image deleted successfully", null);
-        }).orElseGet(() -> new ApiResponse<>("error", "Image not found", null));
+            return 0;
+        }).orElseGet(() -> -1);
     }
 
-    public ApiResponse<?> addMask(Long imageId, MultipartFile file, MultipartFile segmentationJson, String source) {
-        try {
-            Optional<Image> image = imageRepository.findById(imageId);
-            if (image.isPresent()) {
-                String filename = file.getOriginalFilename();
-                assert filename != null;
-                String recordId = image.get().getImagingRecord().getRecordId();
-                Long patientId = image.get().getPatient().getPatientId();
-                Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
-                Files.createDirectories(maskLocation);
-                Files.copy(file.getInputStream(), maskLocation.resolve(filename));
-                String jsonName = segmentationJson.getOriginalFilename();
-                assert jsonName != null;
-                Files.copy(segmentationJson.getInputStream(), maskLocation.resolve(jsonName));
-                Mask mask = new Mask();
-                mask.setImage(image.get());
-                mask.setSegmentationMaskPath(maskLocation.resolve(filename).toString());
-                mask.setSegmentationJsonPath(maskLocation.resolve(jsonName).toString());
-                mask.setSegmentationSource(Mask.SegmentationSource.valueOf(source));
-                Mask savedMask = maskRepository.save(mask);
-                return new ApiResponse<>("success", "Mask added successfully", savedMask);
-            } else {
-                return new ApiResponse<>("error", "Image not found", null);
-            }
-        } catch (IOException e) {
-            return new ApiResponse<>("error", "Failed to add mask", e);
+    public Mask addMask(Long imageId, MultipartFile file, MultipartFile segmentationJson, String source) throws IOException {
+        Optional<Image> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            String filename = file.getOriginalFilename();
+            assert filename != null;
+            String recordId = image.get().getImagingRecord().getRecordId();
+            Long patientId = image.get().getPatient().getPatientId();
+            Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
+            Files.createDirectories(maskLocation);
+            Files.copy(file.getInputStream(), maskLocation.resolve(filename));
+            String jsonName = segmentationJson.getOriginalFilename();
+            assert jsonName != null;
+            Files.copy(segmentationJson.getInputStream(), maskLocation.resolve(jsonName));
+            Mask mask = new Mask();
+            mask.setImage(image.get());
+            mask.setSegmentationMaskPath(maskLocation.resolve(filename).toString());
+            mask.setSegmentationJsonPath(maskLocation.resolve(jsonName).toString());
+            mask.setSegmentationSource(Mask.SegmentationSource.valueOf(source));
+            return maskRepository.save(mask);
+        } else {
+            return null;
+        }
+    }
+
+    public Mask addMask(Long imageId, MultipartFile file, String source) throws IOException {
+        Optional<Image> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            String filename = file.getOriginalFilename();
+            assert filename != null;
+            String recordId = image.get().getImagingRecord().getRecordId();
+            Long patientId = image.get().getPatient().getPatientId();
+            Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
+            Files.createDirectories(maskLocation);
+            Files.copy(file.getInputStream(), maskLocation.resolve(filename));
+            Mask mask = new Mask();
+            mask.setImage(image.get());
+            mask.setSegmentationMaskPath(maskLocation.resolve(filename).toString());
+            mask.setSegmentationSource(Mask.SegmentationSource.valueOf(source));
+            return maskRepository.save(mask);
+        } else {
+            return null;
         }
     }
 
@@ -207,45 +213,40 @@ public class ImagingService {
         }
     }
 
-    public ApiResponse<Mask> getMask(Long maskId) {
+    public Mask getMask(Long maskId) throws MalformedURLException {
         Optional<Mask> mask = maskRepository.findById(maskId);
         if (mask.isPresent()) {
             // 获取掩膜图像
-            try {
-                Path file = rootLocation.resolve(mask.get().getSegmentationMaskPath());
-                Resource resource = new UrlResource(file.toUri());
-                if (resource.exists() || resource.isReadable()) {
-                    mask.get().setMaskResource(resource);
-                    return new ApiResponse<>("success", "Mask fetched successfully", mask.get());
-                } else {
-                    return new ApiResponse<>("error", "File not found or not readable", null);
-                }
-            } catch (Exception e) {
-                return new ApiResponse<>("error", "Failed to fetch mask", null);
+            Path file = rootLocation.resolve(mask.get().getSegmentationMaskPath());
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                mask.get().setMaskResource(resource);
+                return mask.get();
+            } else {
+                return null;
             }
         } else {
-            return new ApiResponse<>("error", "Mask not found", null);
+            return null;
         }
     }
 
-    public ApiResponse<Mask> updateMask(Long maskId, Mask updatedMask) {
+    public Mask updateMask(Long maskId, Mask updatedMask) {
         return maskRepository.findById(maskId).map(mask -> {
             mask.setSegmentationMaskPath(updatedMask.getSegmentationMaskPath());
             mask.setSegmentationJsonPath(updatedMask.getSegmentationJsonPath());
             mask.setSegmentationSource(updatedMask.getSegmentationSource());
-            Mask savedMask = maskRepository.save(mask);
-            return new ApiResponse<>("success", "Mask updated successfully", savedMask);
-        }).orElseGet(() -> new ApiResponse<>("error", "Mask not found", null));
+            return maskRepository.save(mask);
+        }).orElseGet(() -> null);
     }
 
-    public ApiResponse<?> deleteMask(Long maskId) {
+    public int deleteMask(Long maskId) {
         return maskRepository.findById(maskId).map(mask -> {
             maskRepository.delete(mask);
-            return new ApiResponse<>("success", "Mask deleted successfully", null);
-        }).orElseGet(() -> new ApiResponse<>("error", "Mask not found", null));
+            return 0;
+        }).orElseGet(() -> -1);
     }
 
-    public ApiResponse<PlacentaSegmentationGrading> addGrading(Long imageId, Long maskId, PlacentaSegmentationGrading grading) {
+    public PlacentaSegmentationGrading addGrading(Long imageId, Long maskId, PlacentaSegmentationGrading grading) {
         Optional<Image> image = imageRepository.findById(imageId);
         Optional<Mask> mask = maskRepository.findById(maskId);
         if (image.isPresent() && mask.isPresent()) {
@@ -253,56 +254,50 @@ public class ImagingService {
             grading.setMask(mask.get());
             grading.setPatient(image.get().getPatient());
             grading.setTimestamp(LocalDateTime.now());
-            PlacentaSegmentationGrading savedGrading = gradingRepository.save(grading);
-            return new ApiResponse<>("success", "Grading added successfully", savedGrading);
+            return gradingRepository.save(grading);
         } else {
-            return new ApiResponse<>("error", "Image or Mask not found", null);
+            return null;
         }
     }
 
-    public ApiResponse<PlacentaSegmentationGrading> getGrading(Long gradingId) {
+    public PlacentaSegmentationGrading getGrading(Long gradingId) throws MalformedURLException {
         Optional<PlacentaSegmentationGrading> grading = gradingRepository.findById(gradingId);
         if (grading.isPresent()) {
             // 获取原图像和掩膜图像
-            try {
-                Image image = grading.get().getImage();
-                Mask mask = grading.get().getMask();
+            Image image = grading.get().getImage();
+            Mask mask = grading.get().getMask();
 
-                Path imagePath = rootLocation.resolve(image.getImagePath());
-                Resource imageResource = new UrlResource(imagePath.toUri());
+            Path imagePath = rootLocation.resolve(image.getImagePath());
+            Resource imageResource = new UrlResource(imagePath.toUri());
 
-                Path maskPath = rootLocation.resolve(mask.getSegmentationMaskPath());
-                Resource maskResource = new UrlResource(maskPath.toUri());
+            Path maskPath = rootLocation.resolve(mask.getSegmentationMaskPath());
+            Resource maskResource = new UrlResource(maskPath.toUri());
 
-                if ((imageResource.exists() && imageResource.isReadable()) && (maskResource.exists() && maskResource.isReadable())) {
-                    grading.get().setImageResource(imageResource);
-                    grading.get().setMaskResource(maskResource);
-                    return new ApiResponse<>("success", "Grading fetched successfully", grading.get());
-                } else {
-                    return new ApiResponse<>("error", "File not found or not readable", null);
-                }
-            } catch (Exception e) {
-                return new ApiResponse<>("error", "Failed to fetch grading resources", null);
+            if ((imageResource.exists() && imageResource.isReadable()) && (maskResource.exists() && maskResource.isReadable())) {
+                grading.get().setImageResource(imageResource);
+                grading.get().setMaskResource(maskResource);
+                return grading.get();
+            } else {
+                return null;
             }
         } else {
-            return new ApiResponse<>("error", "Grading not found", null);
+            return null;
         }
     }
 
-    public ApiResponse<PlacentaSegmentationGrading> updateGrading(Long gradingId, PlacentaSegmentationGrading updatedGrading) {
+    public PlacentaSegmentationGrading updateGrading(Long gradingId, PlacentaSegmentationGrading updatedGrading) {
         return gradingRepository.findById(gradingId).map(grading -> {
             grading.setGrade(updatedGrading.getGrade());
             grading.setProbability(updatedGrading.getProbability());
             grading.setOverallGrade(updatedGrading.getOverallGrade());
-            PlacentaSegmentationGrading savedGrading = gradingRepository.save(grading);
-            return new ApiResponse<>("success", "Grading updated successfully", savedGrading);
-        }).orElseGet(() -> new ApiResponse<>("error", "Grading not found", null));
+            return gradingRepository.save(grading);
+        }).orElseGet(() -> null);
     }
 
-    public ApiResponse<?> deleteGrading(Long gradingId) {
+    public int deleteGrading(Long gradingId) {
         return gradingRepository.findById(gradingId).map(grading -> {
             gradingRepository.delete(grading);
-            return new ApiResponse<>("success", "Grading deleted successfully", null);
-        }).orElseGet(() -> new ApiResponse<>("error", "Grading not found", null));
+            return 0;
+        }).orElseGet(() -> -1);
     }
 }
