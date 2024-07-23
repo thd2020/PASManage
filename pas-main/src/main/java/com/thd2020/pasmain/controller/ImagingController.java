@@ -111,7 +111,7 @@ public class ImagingController {
                     .body("Failed to add mask");
         }
         UrlResource urlResource = new UrlResource(segmentedImagePath);
-        FileSystemResource fileSystemResource = new FileSystemResource(segmentedImagePath);
+        //FileSystemResource fileSystemResource = new FileSystemResource(segmentedImagePath);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
