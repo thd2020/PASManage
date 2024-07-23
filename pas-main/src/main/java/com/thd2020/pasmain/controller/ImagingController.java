@@ -16,11 +16,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -174,16 +177,25 @@ public class ImagingController {
 
     @Operation(summary = "获取图像", description = "获取图像及其文件")
     @GetMapping("/images/{imageId}")
-    public ResponseEntity<Resource> getImage(
+    public ResponseEntity<MultiValueMap<String, Object>> getImage(
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getPatientId())) {
             Image image = imagingService.getImage(imageId);
             if (image != null) {
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+                body.add("image", new ByteArrayResource(image.getImageResource().getInputStream().readAllBytes()) {
+                    @Override
+                    public String getFilename() {
+                        return image.getImageName();
+                    }
+                });
+                image.setImageResource(null);
+                body.add("details", image);
+
                 return ResponseEntity.ok()
-                        .contentType(MediaType.IMAGE_JPEG)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getImageName() + "\"")
-                        .body(image.getImageResource());
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .body(body);
             }
         }
         return ResponseEntity.status(401).build();

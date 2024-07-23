@@ -1,6 +1,7 @@
 package com.thd2020.pasmain.service;
 
 import ai.onnxruntime.*;
+import org.opencv.core.Core;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,8 @@ import org.opencv.imgproc.Imgproc;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+
 import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 
 @Service
@@ -33,7 +36,7 @@ public class SegmentService {
     private static final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
     private static final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
     private static final String OUTPUT_DIR = "output";
-    private static final String PYTHON_SCRIPT_PATH = "path/to/main.py";
+    private static final String PYTHON_SCRIPT_PATH = "path/to/segment.py";
     private static final String WORKDIR = "workdir";
 
     private final OrtEnvironment env;
@@ -154,7 +157,15 @@ public class SegmentService {
         // Save output image
         float[][][][] masks4D = (float[][][][]) decoderResult.get(0).getValue();
         float[][] mask2D = masks4D[0][0]; // 取第一张2D mask
+        double[] flatArray = flattenArray(mask2D);
 
+        // Calculate statistics
+        DescriptiveStatistics stats = new DescriptiveStatistics(flatArray);
+
+        System.out.println("Maximum: " + stats.getMax());
+        System.out.println("Minimum: " + stats.getMin());
+        System.out.println("Mean: " + stats.getMean());
+        System.out.println("Standard Deviation: " + stats.getStandardDeviation());
 
         // 应用sigmoid函数
         float[][] sigmoidMask = new float[mask2D.length][mask2D[0].length];
@@ -185,6 +196,21 @@ public class SegmentService {
         ImageIO.write(maskImage, "jpg", outputPath.toFile());
 
         return outputPath.toString();
+    }
+
+    private static double[] flattenArray(float[][] matrix) {
+        int rows = matrix.length;
+        int cols = matrix[0].length;
+        double[] flatArray = new double[rows * cols];
+        int index = 0;
+
+        for (float[] row : matrix) {
+            for (float value : row) {
+                flatArray[index++] = value;
+            }
+        }
+
+        return flatArray;
     }
 
     public String segmentImagePy(String patientId, String recordId, String imagePath, String segmentationType, Map<String, Object> coordinates) throws IOException, InterruptedException {
