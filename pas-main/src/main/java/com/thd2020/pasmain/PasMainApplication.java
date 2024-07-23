@@ -14,9 +14,7 @@ public class PasMainApplication {
             URL url = ClassLoader.getSystemResource("lib/libopencv_java4100.so");
             System.load(url.getPath());
         }
-        catch (UnsatisfiedLinkError ignore) {
-
-        }
+        catch (UnsatisfiedLinkError ignore) { }
     }
 
     public static void main(String[] args) {

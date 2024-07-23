@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -70,24 +71,28 @@ public class ImagingController {
 
     @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
-    public ApiResponse<ResponseEntity<Resource>> segmentImage(
+    public ResponseEntity<?> segmentImage(
             @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
             @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
             @Parameter(description = "分割提示类型", required = true) @RequestParam String hintType,
             @Parameter(description = "提示坐标", required = false) @RequestParam Map<String, Object> hintCoordinates,
-            @RequestHeader("Authorization") String token) throws IOException, OrtException {
+            @RequestHeader("Authorization") String token) throws IOException, OrtException, InterruptedException {
         Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
-            return new ApiResponse<>("error", "Unauthorized", null);
+            return ResponseEntity
+                    .status(401)
+                    .build();
         }
         // Step 1: 添加图像记录
         Image savedImage = imagingService.addImage(recordId, image);
         if (savedImage == null) {
-            return new ApiResponse<>("error", "Failed to add image", null);
+            return ResponseEntity
+                    .status(500)
+                    .body("Failed to add image");
         }
         Long imageId = savedImage.getImageId();
         // Step 2: 图像分割
-        String segmentedImagePath = segmentService.segmentImage(
+        String segmentedImagePath = segmentService.segmentImagePy(
                 patientId.toString(),
                 recordId,
                 savedImage.getImagePath(),
@@ -95,17 +100,22 @@ public class ImagingController {
                 hintCoordinates
         );
         if (segmentedImagePath == null) {
-            return new ApiResponse<>("error", "Failed to segment image", null);
+            return ResponseEntity
+                    .status(404)
+                    .body("Failed to segment image, result is null");
         }
         Mask addedMask = imagingService.addMask(imageId, Paths.get(segmentedImagePath), "MODEL");
         if (addedMask == null) {
-            return new ApiResponse<>("error", "Failed to add mask", null);
+            return ResponseEntity
+                    .status(404)
+                    .body("Failed to add mask");
         }
-        ResponseEntity<Resource> responseEntity = ResponseEntity.ok()
+        UrlResource urlResource = new UrlResource(segmentedImagePath);
+        FileSystemResource fileSystemResource = new FileSystemResource(segmentedImagePath);
+        return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
-                .body(new UrlResource(segmentedImagePath));
-        return new ApiResponse<>("success", "Image segmented successfully", responseEntity);
+                .body(new UrlResource("file:/" + segmentedImagePath));
     }
 
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")

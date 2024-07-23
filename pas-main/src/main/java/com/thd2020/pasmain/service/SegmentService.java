@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,11 +33,12 @@ import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 public class SegmentService {
 
     private static final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
+    static URL scriptUrl = ClassLoader.getSystemResource("segment.py");
 
     private static final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
     private static final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
     private static final String OUTPUT_DIR = "output";
-    private static final String PYTHON_SCRIPT_PATH = "path/to/segment.py";
+    private static final String PYTHON_SCRIPT_PATH = scriptUrl.getPath();
     private static final String WORKDIR = "workdir";
 
     private final OrtEnvironment env;
@@ -214,12 +216,18 @@ public class SegmentService {
     }
 
     public String segmentImagePy(String patientId, String recordId, String imagePath, String segmentationType, Map<String, Object> coordinates) throws IOException, InterruptedException {
+        File savedImage = new File(imagePath);
+        String imageName = FilenameUtils.removeExtension(savedImage.getName());
+        String outputDirPath = String.format("%s/%s/%s/masks/", rootLocation, patientId, recordId);
+        File outputDir = new File(outputDirPath);
+        Files.createDirectories(outputDir.toPath());
+        Path outputPath = Paths.get(outputDirPath, String.format("%s_mask.jpg", imageName));
         // 构建命令行参数
         ProcessBuilder pb = new ProcessBuilder("python3", PYTHON_SCRIPT_PATH,
                 "--encoder_model", ENCODER_MODEL_PATH,
                 "--decoder_model", DECODER_MODEL_PATH,
                 "--img_path", imagePath,
-                "--work_dir", WORKDIR);
+                "--work_dir", outputDirPath);
 
         if (segmentationType.equalsIgnoreCase("POINT")) {
             String pointCoords = (String) coordinates.get("point_coords");
@@ -236,22 +244,10 @@ public class SegmentService {
 
         // 启动Python进程
         Process process = pb.start();
-
-        // 获取进程输出
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        StringBuilder output = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            output.append(line).append("\n");
-        }
-
         int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new IOException("Python script execution failed with exit code " + exitCode);
-        }
 
         // 返回分割后的图像路径
-        return output.toString().trim();
+        return outputPath.toString();
     }
 
     public void close() throws OrtException {
