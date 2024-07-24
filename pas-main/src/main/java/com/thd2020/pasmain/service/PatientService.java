@@ -2,6 +2,7 @@ package com.thd2020.pasmain.service;
 
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.entity.Patient;
+import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,11 +16,22 @@ public class PatientService {
     @Autowired
     private PatientRepository patientRepository;
 
+    @Autowired
+    private UserService userService;
+
     public Optional<Patient> findPatientByUserId(Long userId) {
         return patientRepository.findByUser_UserId(userId);
     }
 
     public Patient addPatient(Patient patient) {
+        if (patient.getUser() == null) {
+            User user = new User();
+            user.setUsername(patient.getName());
+            user.setPassword("Patient123");
+            user.setRole(User.Role.PATIENT);
+            userService.registerUser(user);
+            patient.setUser(user);
+        }
         return patientRepository.save(patient);
     }
 

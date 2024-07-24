@@ -2,7 +2,10 @@ package com.thd2020.pasmain.controller;
 
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.entity.Patient;
+import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.service.PatientService;
+import com.thd2020.pasmain.service.UserService;
+import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/patients")
@@ -20,6 +24,12 @@ public class PatientController {
 
     @Autowired
     private UtilFunctions utilFunctions;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserService userService;
 
     @PostMapping
     @Operation(summary = "添加病人信息", description = "允许管理员和医生添加新的病人信息")

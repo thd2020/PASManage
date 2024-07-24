@@ -11,8 +11,7 @@ public class PasMainApplication {
 
     static {
         try {
-            URL url = ClassLoader.getSystemResource("lib/libopencv_java4100.so");
-            System.load(url.getPath());
+            System.load("/home/thd2020/Vision/opencv/build/lib/libopencv_java4100.so");
         }
         catch (UnsatisfiedLinkError ignore) { }
     }

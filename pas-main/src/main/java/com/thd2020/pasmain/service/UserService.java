@@ -74,17 +74,16 @@ public class UserService {
 
 
     // 用户登录
-    public Optional<User> loginUser(String username, String password) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
+    public Optional<User> loginUser(Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             user.setLastLogin(LocalDateTime.now());
             user = userRepository.save(user);
-            if (passwordEncoder.matches(password, user.getPassword())) {
-                return Optional.of(user);
-            }
+            return Optional.of(user);
+        } else {
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     public void generateAndSendCode(String phone) throws IOException {

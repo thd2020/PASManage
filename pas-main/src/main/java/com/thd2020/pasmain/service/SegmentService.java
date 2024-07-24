@@ -18,10 +18,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.commons.io.FilenameUtils;
 
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
+//import org.opencv.core.CvType;
+//import org.opencv.core.Mat;
+//import org.opencv.core.Size;
+//import org.opencv.imgproc.Imgproc;
 
 import javax.imageio.ImageIO;
 
@@ -33,12 +33,11 @@ import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 public class SegmentService {
 
     private static final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
-    static URL scriptUrl = ClassLoader.getSystemResource("segment.py");
 
     private static final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
     private static final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
     private static final String OUTPUT_DIR = "output";
-    private static final String PYTHON_SCRIPT_PATH = scriptUrl.getPath();
+    private static final String PYTHON_SCRIPT_PATH = "/home/thd2020/Projects/PASManage/pas-main/target/classes/segment.py";
     private static final String WORKDIR = "workdir";
 
     private final OrtEnvironment env;
@@ -46,9 +45,9 @@ public class SegmentService {
     private final OrtSession decoderSession;
 
 
-    private final float[] pixelMean = {123.675f, 116.28f, 103.53f};
-    private final float[] pixelStd = {58.395f, 57.12f, 57.375f};
-    private final Size inputSize = new Size(256, 256);
+//    private final float[] pixelMean = {123.675f, 116.28f, 103.53f};
+//    private final float[] pixelStd = {58.395f, 57.12f, 57.375f};
+//    private final Size inputSize = new Size(256, 256);
 
     public SegmentService() throws OrtException, IOException {
         env = OrtEnvironment.getEnvironment();
@@ -56,7 +55,7 @@ public class SegmentService {
         decoderSession = env.createSession(DECODER_MODEL_PATH, new OrtSession.SessionOptions());
     }
 
-    private float[][][][] convertImageToFloatTensor(BufferedImage image) {
+/**    private float[][][][] convertImageToFloatTensor(BufferedImage image) {
         int targetHeight = 256;
         int targetWidth = 256;
 
@@ -198,7 +197,7 @@ public class SegmentService {
         ImageIO.write(maskImage, "jpg", outputPath.toFile());
 
         return outputPath.toString();
-    }
+    } **/
 
     private static double[] flattenArray(float[][] matrix) {
         int rows = matrix.length;

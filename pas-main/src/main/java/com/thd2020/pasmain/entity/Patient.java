@@ -17,7 +17,7 @@ public class Patient {
     @Schema(description = "患者ID", example = "1")
     private Long patientId;
 
-    @Column(nullable = false, length = 20)
+    @Column(length = 20)
     @Schema(description = "身份证号", example = "123456789012345678")
     private String passId;
 
@@ -33,15 +33,15 @@ public class Patient {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     @Schema(description = "性别", example = "MALE")
     private Gender gender;
 
-    @Column(nullable = false)
+    @Column
     @Schema(description = "出生日期", example = "1980-01-01")
     private LocalDate birthDate;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
     @Schema(description = "住址", example = "北京市朝阳区某街道")
     private String address;
 

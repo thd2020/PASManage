@@ -61,16 +61,17 @@ public class UserController {
             @Parameter(description = "用户注册信息", required = true)
             @RequestBody User user) {
         User registeredUser = userService.registerUser(user);
-        // 根据角色将用户关联到病人或医生c
+        // 根据角色将用户关联到病人或医生
         if (user.getRole() == User.Role.PATIENT) {
             Patient patient = new Patient();
             patient.setUser(registeredUser);
+            patient.setName(registeredUser.getUsername());
             patientService.addPatient(patient);
         } else if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
             Doctor doctor = new Doctor();
             doctor.setUser(registeredUser);
             doctor.setName(registeredUser.getUsername());
-            docInfoService.saveDoctor(doctor);
+            docInfoService.saveDoctor(doctor, user.getRole());
         }
         return new ApiResponse<>("success", "User registered successfully", registeredUser);
     }
@@ -85,8 +86,10 @@ public class UserController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
             User user = (User) authentication.getPrincipal();
-            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
-            JwtResponse jwtResponse = new JwtResponse(token, user);
+            Long UserId = user.getUserId();
+            String token = jwtUtil.generateToken(UserId, user.getUsername());
+            User loginedUser = userService.loginUser(UserId).get();
+            JwtResponse jwtResponse = new JwtResponse(token, loginedUser);
             return new ApiResponse<>("success", "Login successful", jwtResponse);
         } catch (AuthenticationException e) {
             return new ApiResponse<>("failed", "Username and Password not match", null);

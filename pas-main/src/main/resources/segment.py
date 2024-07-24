@@ -49,6 +49,8 @@ parser.add_argument(
     help="work dir"
 )
 
+
+
 args = parser.parse_args()
 
 def show_mask(mask, ax, random_color=False):

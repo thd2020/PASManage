@@ -10,6 +10,7 @@ import com.thd2020.pasmain.repository.PlacentaSegmentationGradingRepository;
 import com.thd2020.pasmain.service.ImagingService;
 import com.thd2020.pasmain.service.PatientService;
 import com.thd2020.pasmain.service.SegmentService;
+import com.thd2020.pasmain.service.UserService;
 import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,6 +69,8 @@ public class ImagingController {
     @Autowired
     private PlacentaSegmentationGradingRepository placentaSegmentationGradingRepository;
 
+    @Autowired
+    private UserService userService;
 
     @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
@@ -110,12 +113,11 @@ public class ImagingController {
                     .status(404)
                     .body("Failed to add mask");
         }
-        UrlResource urlResource = new UrlResource(segmentedImagePath);
-        //FileSystemResource fileSystemResource = new FileSystemResource(segmentedImagePath);
+        FileSystemResource resultMask = new FileSystemResource(segmentedImagePath);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
-                .body(new UrlResource("file:/" + segmentedImagePath));
+                .body(resultMask);
     }
 
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")
@@ -136,7 +138,7 @@ public class ImagingController {
     public ApiResponse<ImagingRecord> getImagingRecord(
             @Parameter(description = "影像记录ID", required = true) @PathVariable String recordId,
             @RequestHeader("Authorization") String token) {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getPatientId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getUser().getUserId())) {
             ImagingRecord gottenImagingRecord = imagingService.getImagingRecord(recordId);
             return new ApiResponse<>(gottenImagingRecord!=null?"success":"failure", gottenImagingRecord!=null?"Successfully got imaging record":"failed to get imaging record", gottenImagingRecord);
         } else {
@@ -150,7 +152,7 @@ public class ImagingController {
             @Parameter(description = "影像记录ID", required = true) @PathVariable String recordId,
             @Parameter(description = "更新后的影像记录实体", required = true) @RequestBody ImagingRecord imagingRecord,
             @RequestHeader("Authorization") String token) {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getPatientId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getUser().getUserId())) {
             ImagingRecord updatedImagingRecord = imagingService.updateImagingRecord(recordId, imagingRecord);
             return new ApiResponse<>(updatedImagingRecord!=null?"success":"failure", updatedImagingRecord!=null?"Successfully updated imaging record":"failed to update imaging record", updatedImagingRecord);
         } else {
@@ -190,16 +192,11 @@ public class ImagingController {
     public ResponseEntity<MultiValueMap<String, Object>> getImage(
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getPatientId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getUser().getUserId())) {
             Image image = imagingService.getImage(imageId);
             if (image != null) {
                 MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-                body.add("image", new ByteArrayResource(image.getImageResource().getInputStream().readAllBytes()) {
-                    @Override
-                    public String getFilename() {
-                        return image.getImageName();
-                    }
-                });
+                body.add("image", new FileSystemResource(image.getImagePath()));
                 image.setImageResource(null);
                 body.add("details", image);
 
@@ -261,16 +258,20 @@ public class ImagingController {
 
     @Operation(summary = "获取掩膜", description = "获取掩膜及其文件")
     @GetMapping("/masks/{maskId}")
-    public ResponseEntity<Resource> getMask(
+    public ResponseEntity<?> getMask(
             @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskRepository.getReferenceById(maskId).getImage().getPatient().getPatientId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskRepository.getReferenceById(maskId).getImage().getPatient().getUser().getUserId())) {
             Mask mask = imagingService.getMask(maskId);
             if (mask != null) {
+                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+                body.add("mask", new FileSystemResource(mask.getSegmentationMaskPath()));
+                mask.setMaskResource(null);
+                body.add("details", mask);
+
                 return ResponseEntity.ok()
-                        .contentType(MediaType.IMAGE_PNG)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + mask.getSegmentationMaskPath() + "\"")
-                        .body(mask.getMaskResource());
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .body(body);
             }
         }
         return ResponseEntity.status(401).build();
@@ -321,7 +322,7 @@ public class ImagingController {
     public ApiResponse<PlacentaSegmentationGrading> getGrading(
             @Parameter(description = "分割/分级结果ID", required = true) @PathVariable Long gradingId,
             @RequestHeader("Authorization") String token) throws IOException {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, placentaSegmentationGradingRepository.findById(gradingId).orElseThrow().getPatient().getPatientId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, placentaSegmentationGradingRepository.findById(gradingId).orElseThrow().getPatient().getUser().getUserId())) {
             return new ApiResponse<>("success", "Successfully got segmentation/grading result", imagingService.getGrading(gradingId));
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);

@@ -26,8 +26,19 @@ public class DocInfoService {
     @Autowired
     private PatientRepository patientRepository;
 
+    @Autowired
+    private UserService userService;
+
     // Doctor related methods
-    public Doctor saveDoctor(Doctor doctor) {
+    public Doctor saveDoctor(Doctor doctor, User.Role doctorType) {
+        if (doctor.getUser() == null) {
+            User user = new User();
+            user.setUsername(doctor.getName());
+            user.setPassword("Doctor123");
+            user.setRole(doctorType);
+            userService.registerUser(user);
+            doctor.setUser(user);
+        }
         return doctorRepository.save(doctor);
     }
 

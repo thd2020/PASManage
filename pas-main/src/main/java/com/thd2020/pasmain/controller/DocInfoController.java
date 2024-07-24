@@ -135,10 +135,11 @@ public class DocInfoController {
     @Operation(summary = "添加医生信息", description = "仅管理员和医生可以添加医生信息")
     public ApiResponse<?> addDoctor(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
+            @Parameter(description = "医生类型, 三级医院医生填写T_DOCTOR，基层医院医生填写B_DOCTOR", required = true) @PathVariable String doctorType,
             @RequestBody Doctor doctor) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             try {
-                Doctor createdDoctor = docInfoService.saveDoctor(doctor);
+                Doctor createdDoctor = docInfoService.saveDoctor(doctor, User.Role.valueOf(doctorType));
                 return new ApiResponse<>("success", "Doctor added successfully", createdDoctor);
             }
             catch (Exception e) {

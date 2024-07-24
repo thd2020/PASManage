@@ -64,6 +64,13 @@ public class User implements UserDetails {
     @Schema(description = "认证提供者", example = "GOOGLE")
     private Provider provider;
 
+    @OneToOne
+    @JoinColumn(name = "hospital_id")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "hospitalId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "所属单位")
+    private Hospital hospital;
+
     public enum Role {
         T_DOCTOR,
         B_DOCTOR,
