@@ -3,6 +3,7 @@ package com.thd2020.pasmain.service;
 import ai.onnxruntime.*;
 import org.opencv.core.Core;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -32,13 +33,16 @@ import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 @Service
 public class SegmentService {
 
-    private static final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
+    @Value("${resources.root}")
+    private String ResourcesRoot = "/home/lmj/xyx/pas";
 
-    private static final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
-    private static final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
-    private static final String OUTPUT_DIR = "output";
-    private static final String PYTHON_SCRIPT_PATH = "/home/thd2020/Projects/PASManage/pas-main/target/classes/segment.py";
-    private static final String WORKDIR = "workdir";
+    private final Path rootLocation = Paths.get(ResourcesRoot);
+
+    private final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
+    private final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
+    private final String OUTPUT_DIR = "output";
+    private final String PYTHON_SCRIPT_PATH = ResourcesRoot+"/segment.py";
+    private final String WORKDIR = "workdir";
 
     private final OrtEnvironment env;
     private final OrtSession encoderSession;

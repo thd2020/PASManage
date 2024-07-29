@@ -32,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -187,25 +188,34 @@ public class ImagingController {
         }
     }
 
-    @Operation(summary = "获取图像", description = "获取图像及其文件")
+    @Operation(summary = "获取图像", description = "获取图像文件")
     @GetMapping("/images/{imageId}")
-    public ResponseEntity<MultiValueMap<String, Object>> getImage(
+    public ResponseEntity<?> getImage(
             @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getUser().getUserId())) {
             Image image = imagingService.getImage(imageId);
             if (image != null) {
-                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-                body.add("image", new FileSystemResource(image.getImagePath()));
-                image.setImageResource(null);
-                body.add("details", image);
-
                 return ResponseEntity.ok()
-                        .contentType(MediaType.MULTIPART_FORM_DATA)
-                        .body(body);
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getImagePath() + "\"")
+                        .body(new FileSystemResource(image.getImagePath()));
             }
         }
-        return ResponseEntity.status(401).build();
+        return ResponseEntity.status(500).build();
+    }
+
+    @Operation(summary = "获取图像信息", description = "获取图像相关信息")
+    @GetMapping("/images/info/{imageId}")
+    public ApiResponse<Image> updateImage(
+            @Parameter(description = "图像ID", required = true) @PathVariable Long imageId,
+            @RequestHeader("Authorization") String token) throws MalformedURLException {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageId)) {
+            Image image = imagingService.getImage(imageId);
+            return new ApiResponse<>(image!=null?"success":"failure", image!=null?"Successfully got image":"failed to get image", image);
+        } else {
+            return new ApiResponse<>("error", "Unauthorized", null);
+        }
     }
 
     @Operation(summary = "更新图像", description = "管理员和医生可以更新图像")
@@ -256,7 +266,7 @@ public class ImagingController {
         }
     }
 
-    @Operation(summary = "获取掩膜", description = "获取掩膜及其文件")
+    @Operation(summary = "获取掩膜", description = "获取掩膜文件")
     @GetMapping("/masks/{maskId}")
     public ResponseEntity<?> getMask(
             @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
@@ -264,17 +274,25 @@ public class ImagingController {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskRepository.getReferenceById(maskId).getImage().getPatient().getUser().getUserId())) {
             Mask mask = imagingService.getMask(maskId);
             if (mask != null) {
-                MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-                body.add("mask", new FileSystemResource(mask.getSegmentationMaskPath()));
-                mask.setMaskResource(null);
-                body.add("details", mask);
-
                 return ResponseEntity.ok()
-                        .contentType(MediaType.MULTIPART_FORM_DATA)
-                        .body(body);
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + mask.getSegmentationMaskPath() + "\"")
+                        .body(new FileSystemResource(mask.getSegmentationMaskPath()));
             }
         }
-        return ResponseEntity.status(401).build();
+        return ResponseEntity.status(500).build();
+    }
+
+    @Operation(summary = "获取掩膜", description = "获取掩膜详细信息")
+    @GetMapping("/masks/info/{maskId}")
+    public ApiResponse<?> getMaskInfo(
+            @Parameter(description = "掩膜ID", required = true) @PathVariable Long maskId,
+            @RequestHeader("Authorization") String token) throws MalformedURLException {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, maskId)) {
+            return new ApiResponse<>("success", "Mask fetched successfully", imagingService.getMask(maskId));
+        } else {
+            return new ApiResponse<>("error", "Unauthorized", null);
+        }
     }
 
     @Operation(summary = "更新掩膜", description = "管理员和医生可以更新掩膜")

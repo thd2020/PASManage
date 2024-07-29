@@ -17,21 +17,21 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--encoder_model",
     type=str,
-    default="/home/thd2020/pas/models/sam-placenta.encoder.onnx",
+    default="/home/lmj/xyx/pas/models/sam-placenta.encoder.onnx",
     help="Path to the SAM-Med2D onnx encoder model.",
 )
 
 parser.add_argument(
     "--decoder_model",
     type=str,
-    default="/home/thd2020/pas/models/sam-placenta.decoder.onnx",
+    default="/home/lmj/xyx/pas/models/sam-placenta.decoder.onnx",
     help="Path to the SAM-Med2D onnx decoder model.",
 )
 
 parser.add_argument(
     "--img_path",
     type=str,
-    default="/home/thd2020/Pictures/mmexport1716130574783.jpg",
+    default="/home/lmj/xyx/pas/1.2.156.112536.1.2143.25015062059151.142751975.jpg",
     help="Path to the image",
 )
 
@@ -45,13 +45,47 @@ parser.add_argument(
 parser.add_argument(
     "--work_dir", 
     type=str, 
-    default="/home/thd2020/pas/",
+    default="/home/lmj/xyx/pas/",
     help="work dir"
 )
 
+parser.add_argument(
+    "--point_coords",
+    type=float,
+    nargs='*',
+    help="List of point coordinates (e.g., --point_coords 162 127 169 140)"
+)
 
+parser.add_argument(
+    "--point_labels",
+    type=int,
+    nargs='*',
+    help="List of point labels (e.g., --point_labels 1 0)"
+)
+
+parser.add_argument(
+    "--boxes",
+    type=float,
+    nargs='*',
+    help="Coordinates of the box in XYXY format (e.g., --boxes 135 100 180 150)"
+)
 
 args = parser.parse_args()
+
+def format_coords_labels(coords, labels):
+    if coords is not None and labels is not None:
+        coords = np.array(coords, dtype=np.float32).reshape(-1, 2)
+        labels = np.array(labels, dtype=np.float32)
+    else:
+        coords, labels = None, None
+    return coords, labels
+
+def format_boxes(boxes):
+    if boxes is not None:
+        boxes = np.array(boxes, dtype=np.float32).reshape(-1, 4)
+    else:
+        boxes = None
+    return boxes
 
 def show_mask(mask, ax, random_color=False):
     if random_color:
@@ -220,7 +254,7 @@ class SamDecoder:
         """decoder forward function
 
         This function can use image feature and prompt to generate mask. Must input
-        at least one box or point.
+        at least one box or pointc.
 
         Args:
             img_embeddings (np.ndarray): the image feature from vit encoder.
@@ -310,6 +344,8 @@ class SamDecoder:
         return boxes.reshape(-1, 4)
 
 def main():
+    point_coords, point_labels = format_coords_labels(args.point_coords, args.point_labels)
+    boxes = format_boxes(args.boxes)
     # Create save folder
     save_path = args.work_dir
     if not os.path.exists(save_path):

@@ -11,7 +11,7 @@ public class PasMainApplication {
 
     static {
         try {
-            System.load("/home/thd2020/Vision/opencv/build/lib/libopencv_java4100.so");
+            System.load("/home/lmj/xyx/pas/libopencv_java4100.so");
         }
         catch (UnsatisfiedLinkError ignore) { }
     }

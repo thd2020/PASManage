@@ -126,7 +126,6 @@ public class ImagingService {
             Path file = rootLocation.resolve(image.get().getImagePath());
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                image.get().setImageResource(resource);
                 return image.get();
             } else {
                 return null;
@@ -220,7 +219,6 @@ public class ImagingService {
             Path file = rootLocation.resolve(mask.get().getSegmentationMaskPath());
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                mask.get().setMaskResource(resource);
                 return mask.get();
             } else {
                 return null;
