@@ -3,10 +3,14 @@ package com.thd2020.pasmain.service;
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.OAuthRequest;
 import com.thd2020.pasmain.entity.Doctor;
+import com.thd2020.pasmain.entity.Hospital;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.repository.DoctorRepository;
+import com.thd2020.pasmain.repository.HospitalRepository;
 import com.thd2020.pasmain.repository.PatientRepository;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +46,9 @@ public class UserService {
 
     @Autowired
     private SmsService smsService;
+
+    @Autowired
+    private HospitalRepository hospitalRepository;
 
     private final Map<String, String> verificationCodes = new HashMap<>();
 
@@ -135,6 +142,9 @@ public class UserService {
             if (updatedUser.getStatus() != null) {
                 user.setStatus(updatedUser.getStatus());
             }
+            Hospital hospital = hospitalRepository.findById(updatedUser.getHospital().getHospitalId())
+                    .orElseThrow(() -> new EntityNotFoundException("Hospital not found"));
+            user.setHospital(hospital);
             return userRepository.save(user);
         });
     }

@@ -31,7 +31,7 @@ parser.add_argument(
 parser.add_argument(
     "--img_path",
     type=str,
-    default="/home/lmj/xyx/pas/1.2.156.112536.1.2143.25015062059151.142751975.jpg",
+    default="/home/lmj/xyx/pas/1/record123/images/膀胱.png",
     help="Path to the image",
 )
 
@@ -45,7 +45,7 @@ parser.add_argument(
 parser.add_argument(
     "--work_dir", 
     type=str, 
-    default="/home/lmj/xyx/pas/",
+    default="/home/lmj/xyx/pas/1/record123/masks/",
     help="work dir"
 )
 

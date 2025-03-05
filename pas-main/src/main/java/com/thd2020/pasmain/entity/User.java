@@ -64,7 +64,7 @@ public class User implements UserDetails {
     @Schema(description = "认证提供者", example = "GOOGLE")
     private Provider provider;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "hospital_id")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "hospitalId")
     @JsonIdentityReference(alwaysAsId = true)

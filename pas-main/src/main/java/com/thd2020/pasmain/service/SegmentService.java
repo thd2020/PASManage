@@ -42,6 +42,7 @@ public class SegmentService {
     private final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
     private final String OUTPUT_DIR = "output";
     private final String PYTHON_SCRIPT_PATH = ResourcesRoot+"/segment.py";
+    private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/xyx/bin/python";
     private final String WORKDIR = "workdir";
 
     private final OrtEnvironment env;
@@ -226,12 +227,11 @@ public class SegmentService {
         Files.createDirectories(outputDir.toPath());
         Path outputPath = Paths.get(outputDirPath, String.format("%s_mask.jpg", imageName));
         // 构建命令行参数
-        ProcessBuilder pb = new ProcessBuilder("python3", PYTHON_SCRIPT_PATH,
+        ProcessBuilder pb = new ProcessBuilder(PYTHON_BINARY_PATH, PYTHON_SCRIPT_PATH,
                 "--encoder_model", ENCODER_MODEL_PATH,
                 "--decoder_model", DECODER_MODEL_PATH,
                 "--img_path", imagePath,
                 "--work_dir", outputDirPath);
-
         if (segmentationType.equalsIgnoreCase("POINT")) {
             String pointCoords = (String) coordinates.get("point_coords");
             String pointLabels = (String) coordinates.get("point_labels");

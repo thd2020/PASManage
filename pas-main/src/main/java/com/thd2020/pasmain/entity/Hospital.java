@@ -60,7 +60,11 @@ public class Hospital {
     @Schema(description = "医院所在区/县", example = "东城区")
     private String district;
 
-    @OneToMany(mappedBy = "hospital")
+    @Column(length = 50)
+    @Schema(description = "医院ip", example = "127.0.0.1")
+    private String serverIp;
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "hospital")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "departmentId")
     @JsonIdentityReference(alwaysAsId = true)
     @JsonManagedReference

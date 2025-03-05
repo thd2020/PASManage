@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import com.thd2020.pasmain.dto.ClassificationResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +39,10 @@ public class ImagingService {
     @Autowired
     private PatientRepository patientRepository;
 
-    private final Path rootLocation = Paths.get("/", "home",  "thd2020", "pas");
+    @Autowired
+    private PlacentaClassificationResultRepository classificationResultRepository;
+
+    private final Path rootLocation = Paths.get("/home/lmj/xyx/pas");
 
     public List<ImagingRecord> findImagingRecordIds(Long patientId) {
         return imagingRecordRepository.findByPatient_PatientId(patientId);
@@ -86,6 +90,19 @@ public class ImagingService {
         Optional<ImagingRecord> record = imagingRecordRepository.findById(recordId);
         if (record.isPresent()) {
             String filename = file.getOriginalFilename();
+            if (imageRepository.getAllByImageName(filename) != null) {
+                Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
+                Files.createDirectories(imageLocation);
+                assert filename != null;
+                Files.copy(file.getInputStream(), imageLocation.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
+                //Image image = imageRepository.getImageByImageName(filename);
+                Image image = new Image();
+                image.setImagingRecord(record.get());
+                image.setPatient(record.get().getPatient());
+                image.setImageName(filename);
+                image.setImagePath(imageLocation.resolve(filename).toString());
+                return imageRepository.save(image);
+            }
             Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
             Files.createDirectories(imageLocation);
             assert filename != null;
@@ -122,18 +139,23 @@ public class ImagingService {
     public Image getImage(Long imageId) throws MalformedURLException {
         Optional<Image> image = imageRepository.findById(imageId);
         if (image.isPresent()) {
-            // 获取图片本身
+            // 获取图片
             Path file = rootLocation.resolve(image.get().getImagePath());
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
-                return image.get();
+                image.get().setImageAvail(Image.Availability.EXIST);
             } else {
-                return null;
+                image.get().setImageAvail(Image.Availability.NONEXIST);
             }
+            return image.get();
         }
         else {
             return null;
         }
+    }
+
+    public List<Image> findImageByPatientId(Long patientId) {
+        return imageRepository.findByPatient_PatientId(patientId);
     }
 
     public Image updateImage(Long imageId, Image updatedImage) {
@@ -283,6 +305,10 @@ public class ImagingService {
         }
     }
 
+    public List<PlacentaSegmentationGrading> findGradingByPatientId(Long patientId) {
+        return gradingRepository.findByPatient_PatientId(patientId);
+    }
+
     public PlacentaSegmentationGrading updateGrading(Long gradingId, PlacentaSegmentationGrading updatedGrading) {
         return gradingRepository.findById(gradingId).map(grading -> {
             grading.setGrade(updatedGrading.getGrade());
@@ -297,5 +323,36 @@ public class ImagingService {
             gradingRepository.delete(grading);
             return 0;
         }).orElseGet(() -> -1);
+    }
+
+    public PlacentaClassificationResult addClassification(Long imageId, String classificationPath, String source) {
+        Optional<Image> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            PlacentaClassificationResult result = new PlacentaClassificationResult();
+            result.setImage(image.get());
+            result.setPatient(image.get().getPatient());
+            result.setClassificationPath(classificationPath);
+            result.setClassificationSource(PlacentaClassificationResult.ClassificationSource.valueOf(source));
+            result.setTimestamp(LocalDateTime.now());
+            return classificationResultRepository.save(result);
+        }
+        return null;
+    }
+
+    public PlacentaClassificationResult addClassification(Long imageId, ClassificationResult classificationResult, String source) {
+        Optional<Image> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            PlacentaClassificationResult result = new PlacentaClassificationResult();
+            result.setImage(image.get());
+            result.setPatient(image.get().getPatient());
+            result.setNormalProbability(classificationResult.getProbabilities().get("normal"));
+            result.setAccretaProbability(classificationResult.getProbabilities().get("accreta"));
+            result.setIncretaProbability(classificationResult.getProbabilities().get("increta"));
+            result.setPredictedType(classificationResult.getPredictedType());
+            result.setClassificationSource(PlacentaClassificationResult.ClassificationSource.valueOf(source));
+            result.setTimestamp(LocalDateTime.now());
+            return classificationResultRepository.save(result);
+        }
+        return null;
     }
 }

@@ -1,0 +1,52 @@
+package com.thd2020.pasmain.service;
+
+import com.thd2020.pasmain.dto.ClassificationResult;
+import org.springframework.stereotype.Service;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class ClassificationService {
+    
+    private final Path pythonScriptPath = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/classify.py");
+
+    public ClassificationResult classifyImage(String imagePath) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder(
+            "python3",
+            pythonScriptPath.toString(),
+            "-img_path", imagePath
+        );
+        
+        Process process = processBuilder.start();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        
+        ClassificationResult result = new ClassificationResult();
+        Map<String, Double> probabilities = new HashMap<>();
+        
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.startsWith("probabilities:")) {
+                String[] parts = line.substring("probabilities:".length()).trim().split(",");
+                for (String part : parts) {
+                    String[] keyValue = part.trim().split("\\s+");
+                    probabilities.put(keyValue[0].replace(":", ""), Double.parseDouble(keyValue[1]));
+                }
+                result.setProbabilities(probabilities);
+            } else if (line.startsWith("predict type:")) {
+                result.setPredictedType(line.substring("predict type:".length()).trim());
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Classification failed with exit code: " + exitCode);
+        }
+
+        return result;
+    }
+}

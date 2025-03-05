@@ -46,9 +46,9 @@ public class ImagingRecord {
     @Schema(description = "图像IDs")
     private List<Image> images;
 
-    @Transient
-    @Schema(description = "图像资源")
-    private List<Resource> imageResources;
+    // @Transient
+    // @Schema(description = "图像资源")
+    // private List<Resource> imageResources;
 
     @Column
     @Schema(description = "图像数目", example = "10")

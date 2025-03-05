@@ -2,11 +2,13 @@ package com.thd2020.pasmain.controller;
 
 import ai.onnxruntime.OrtException;
 import com.thd2020.pasmain.dto.ApiResponse;
+import com.thd2020.pasmain.dto.ClassificationResult;
 import com.thd2020.pasmain.entity.*;
 import com.thd2020.pasmain.repository.ImageRepository;
 import com.thd2020.pasmain.repository.ImagingRecordRepository;
 import com.thd2020.pasmain.repository.MaskRepository;
 import com.thd2020.pasmain.repository.PlacentaSegmentationGradingRepository;
+import com.thd2020.pasmain.service.ClassificationService;
 import com.thd2020.pasmain.service.ImagingService;
 import com.thd2020.pasmain.service.PatientService;
 import com.thd2020.pasmain.service.SegmentService;
@@ -73,6 +75,9 @@ public class ImagingController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ClassificationService classificationService;
+
     @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
     public ResponseEntity<?> segmentImage(
@@ -119,6 +124,84 @@ public class ImagingController {
                 .contentType(MediaType.IMAGE_JPEG)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
                 .body(resultMask);
+    }
+
+    @PostMapping(value = "/segment-exist-image")
+        @Operation(summary = "已有图像分割", description = "基于点或框的提示进行已有图像分割")
+        public ResponseEntity<?> segmentExistingImage(
+                @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
+                @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
+                @Parameter(description = "分割提示类型", required = true) @RequestParam String hintType,
+                @Parameter(description = "提示坐标", required = false) @RequestParam Map<String, Object> hintCoordinates,
+                @RequestHeader("Authorization") String token) throws IOException, OrtException, InterruptedException {
+            Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+            if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
+                return ResponseEntity
+                        .status(401)
+                        .build();
+            }
+            // Step 1: 添加图像记录
+            Image detectedImage = imagingService.getImage(imageId);
+            if (detectedImage == null) {
+                return ResponseEntity
+                        .status(500)
+                        .body("Failed to add image");
+            }
+            // Step 2: 图像分割
+            String segmentedImagePath = segmentService.segmentImagePy(
+                    patientId.toString(),
+                    recordId,
+                    detectedImage.getImagePath(),
+                    hintType,
+                    hintCoordinates
+            );
+            if (segmentedImagePath == null) {
+                return ResponseEntity
+                        .status(404)
+                        .body("Failed to segment image, result is null");
+            }
+            Mask addedMask = imagingService.addMask(imageId, Paths.get(segmentedImagePath), "MODEL");
+            if (addedMask == null) {
+                return ResponseEntity
+                        .status(404)
+                        .body("Failed to add mask");
+            }
+            FileSystemResource resultMask = new FileSystemResource(segmentedImagePath);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + addedMask.getSegmentationMaskPath() + "\"")
+                    .body(resultMask);
+        }
+
+    @PostMapping(value = "/classify-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "图像分类", description = "对上传的图像进行分类")
+    public ResponseEntity<?> classifyImage(
+            @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
+            @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
+            @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
+        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Image savedImage = imagingService.addImage(recordId, image);
+        if (savedImage == null) {
+            return ResponseEntity.status(500).body("Failed to add image");
+        }
+
+        ClassificationResult classificationResult = classificationService.classifyImage(savedImage.getImagePath());
+
+        PlacentaClassificationResult result = imagingService.addClassification(
+            savedImage.getImageId(),
+            classificationResult,
+            "MODEL"
+        );
+
+        if (result == null) {
+            return ResponseEntity.status(500).body("Failed to save classification result");
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")
@@ -195,14 +278,17 @@ public class ImagingController {
             @RequestHeader("Authorization") String token) throws IOException {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imageRepository.getReferenceById(imageId).getPatient().getUser().getUserId())) {
             Image image = imagingService.getImage(imageId);
-            if (image != null) {
+            if (image != null && image.getImageAvail() != Image.Availability.NONEXIST) {
                 return ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_JPEG)
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + image.getImagePath() + "\"")
                         .body(new FileSystemResource(image.getImagePath()));
             }
+            else {
+                return ResponseEntity.status(404).body("Cannot find image locally");
+            }
         }
-        return ResponseEntity.status(500).build();
+        return ResponseEntity.status(503).body("Unauthorised - Not Enough Privileges");
     }
 
     @Operation(summary = "获取图像信息", description = "获取图像相关信息")
@@ -280,7 +366,8 @@ public class ImagingController {
                         .body(new FileSystemResource(mask.getSegmentationMaskPath()));
             }
         }
-        return ResponseEntity.status(500).build();
+        return ResponseEntity.status(503)
+            .body("Unauthorised - Not Enough Privileges");
     }
 
     @Operation(summary = "获取掩膜", description = "获取掩膜详细信息")

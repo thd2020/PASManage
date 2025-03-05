@@ -48,9 +48,18 @@ public class Image {
     @Schema(description = "图像文件")
     private Resource imageResource;
 
+    @Column
+    @Schema(description = "图像文件有效性", example = "EXIST")
+    private Availability imageAvail;
+
     @OneToMany(mappedBy = "image", cascade = CascadeType.ALL)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "maskId")
     @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "掩膜IDs")
     private List<Mask> masks;
+
+    public enum Availability {
+        EXIST,
+        NONEXIST
+    }
 }

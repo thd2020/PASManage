@@ -116,6 +116,10 @@ public class PRInfoService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid score ID"));
     }
 
+    public List<UltrasoundScore> findUltrasoundScoreIdsByPatientId(Long patientId) {
+        return ultrasoundScoreRepository.findByPatient_PatientId(patientId);
+    }
+
     public UltrasoundScore updateUltrasoundScore(Long scoreId, UltrasoundScore ultrasoundScore) {
         UltrasoundScore existingScore = getUltrasoundScoreById(scoreId);
 

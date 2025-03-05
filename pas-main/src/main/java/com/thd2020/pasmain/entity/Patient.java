@@ -37,8 +37,20 @@ public class Patient {
     @Schema(description = "性别", example = "MALE")
     private Gender gender;
 
+    @OneToOne
+    @JoinColumn(name = "from_hospital", nullable = true)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "hospitalId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "来自医院", example = "1980-01-01")
+    private Hospital fromHospital;
+
+    @Enumerated(EnumType.STRING)
     @Column
-    @Schema(description = "出生日期", example = "1980-01-01")
+    @Schema(description = "转院状态", example = "PENDING")
+    private ReferralStatus referralStatus;
+
+    @Column
+    @Schema(description = "出生日期")
     private LocalDate birthDate;
 
     @Column(length = 255)
@@ -58,5 +70,11 @@ public class Patient {
         FEMALE,
         @Schema(description = "其他")
         OTHER
+    }
+
+    public enum ReferralStatus {
+        PENDING,
+        REJECTED,
+        APPROVED
     }
 }

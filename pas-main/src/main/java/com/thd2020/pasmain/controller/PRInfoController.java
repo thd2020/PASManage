@@ -27,7 +27,7 @@ public class PRInfoController {
     public ApiResponse<MedicalRecord> addMedicalRecord(
             @Parameter(description = "JWT token for authentication", required = true)
             @RequestHeader("Authorization") String token,
-            @RequestBody MedicalRecord medicalRecord) {
+            @org.springframework.web.bind.annotation.RequestBody MedicalRecord medicalRecord) {
 
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             MedicalRecord createdRecord = prInfoService.addMedicalRecord(medicalRecord);
@@ -58,7 +58,7 @@ public class PRInfoController {
     public ApiResponse<MedicalRecord> updateMedicalRecord(
             @Parameter(description = "病历记录ID", required = true) @PathVariable("record_id") int recordId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token,
-            @RequestBody MedicalRecord medicalRecord) {
+            @org.springframework.web.bind.annotation.RequestBody MedicalRecord medicalRecord) {
 
         MedicalRecord existingRecord = prInfoService.getMedicalRecordById(recordId);
         Long patientUserId = existingRecord.getPatient().getUser().getUserId();

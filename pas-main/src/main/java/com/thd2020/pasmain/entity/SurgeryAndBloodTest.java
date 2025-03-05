@@ -2,6 +2,7 @@ package com.thd2020.pasmain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -17,11 +18,12 @@ import lombok.Data;
     @Schema(description = "记录ID", example = "1")
     private Long recordId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "关联的患者ID")
+    @JsonProperty("patient")
     private Patient patient;
 
     @Schema(description = "分娩孕周", example = "39")
