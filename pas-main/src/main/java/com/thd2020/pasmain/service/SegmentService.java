@@ -6,6 +6,8 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -16,7 +18,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
 //import org.opencv.core.CvType;
@@ -44,6 +48,8 @@ public class SegmentService {
     private final String PYTHON_SCRIPT_PATH = ResourcesRoot+"/segment.py";
     private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/xyx/bin/python";
     private final String WORKDIR = "workdir";
+    private final String MULTI_SEGMENT_SCRIPT_PATH = ResourcesRoot+"/multisegment.py";
+    private final String MULTI_SEGMENT_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "ssam-placenta.pth").toString();
 
     private final OrtEnvironment env;
     private final OrtSession encoderSession;
@@ -251,6 +257,50 @@ public class SegmentService {
 
         // 返回分割后的图像路径
         return outputPath.toString();
+    }
+
+    public Map<String, String> multiSegmentImagePy(String patientId, String recordId, String imagePath, String promptType, List<String> targets, Map<String, Object> prompts) throws IOException, InterruptedException {
+        File savedImage = new File(imagePath);
+        String imageName = FilenameUtils.removeExtension(savedImage.getName());
+        String outputDirPath = String.format("%s/%s/%s/masks/", rootLocation, patientId, recordId);
+        File outputDir = new File(outputDirPath);
+        Files.createDirectories(outputDir.toPath());
+
+        // Convert targets array to space-separated string
+        String targetsStr = String.join(" ", targets);
+        
+        // Convert prompts map to JSON string
+        ObjectMapper mapper = new ObjectMapper();
+        String promptsJson = mapper.writeValueAsString(prompts);
+
+        // Build command
+        ProcessBuilder pb = new ProcessBuilder(
+            PYTHON_BINARY_PATH,
+            MULTI_SEGMENT_SCRIPT_PATH,
+            "--model_path", MULTI_SEGMENT_MODEL_PATH,
+            "--img_path", imagePath,
+            "--work_dir", outputDirPath,
+            "--prompt_type", promptType,
+            "--targets", targetsStr,
+            "--prompts", promptsJson
+        );
+
+        // Run process
+        Process process = pb.start();
+        int exitCode = process.waitFor();
+
+        if (exitCode != 0) {
+            throw new RuntimeException("Segmentation failed with exit code: " + exitCode);
+        }
+
+        // Return paths to all generated masks
+        Map<String, String> maskPaths = new HashMap<>();
+        for (String target : targets) {
+            String maskPath = Paths.get(outputDirPath, String.format("%s_%s_mask.jpg", imageName, target)).toString();
+            maskPaths.put(target, maskPath);
+        }
+
+        return maskPaths;
     }
 
     public void close() throws OrtException {

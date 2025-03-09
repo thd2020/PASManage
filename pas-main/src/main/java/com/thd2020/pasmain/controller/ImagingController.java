@@ -36,6 +36,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -458,6 +459,54 @@ public class ImagingController {
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
+    }
+
+    @PostMapping(value = "/multi-segment-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "多目标图像分割", description = "对一张图像进行多目标分割，返回多个掩膜图像")
+    public ResponseEntity<?> multiSegmentImage(
+            @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
+            @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
+            @Parameter(description = "提示类型(point/box/mask)", required = true) @RequestParam String promptType,
+            @Parameter(description = "目标类型列表", required = true) @RequestParam List<String> targets,
+            @Parameter(description = "分割提示", required = true) @RequestParam Map<String, Object> prompts,
+            @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
+        
+        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Add image
+        Image savedImage = imagingService.addImage(recordId, image);
+        if (savedImage == null) {
+            return ResponseEntity.status(500).body("Failed to add image");
+        }
+        Long imageId = savedImage.getImageId();
+
+        // Perform multi-target segmentation
+        Map<String, String> segmentedImagePaths = segmentService.multiSegmentImagePy(
+            patientId.toString(),
+            recordId,
+            savedImage.getImagePath(),
+            promptType,
+            targets,
+            prompts
+        );
+
+        // Add masks for each target
+        List<Mask> masks = new ArrayList<>();
+        for (Map.Entry<String, String> entry : segmentedImagePaths.entrySet()) {
+            Mask addedMask = imagingService.addMask(imageId, Paths.get(entry.getValue()), "MODEL");
+            if (addedMask != null) {
+                masks.add(addedMask);
+            }
+        }
+
+        MultiValueMap<String, Object> response = new LinkedMultiValueMap<>();
+        response.add("image_id", imageId);
+        response.add("masks", masks);
+
+        return ResponseEntity.ok().body(response);
     }
 }
 

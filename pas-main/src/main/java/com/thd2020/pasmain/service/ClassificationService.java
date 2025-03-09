@@ -25,6 +25,7 @@ public class ClassificationService {
         Process process = processBuilder.start();
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         
+        
         ClassificationResult result = new ClassificationResult();
         Map<String, Double> probabilities = new HashMap<>();
         
@@ -43,10 +44,22 @@ public class ClassificationService {
         }
 
         int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new RuntimeException("Classification failed with exit code: " + exitCode);
+        
+        // Capture error message from stderr
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        StringBuilder errorMessage = new StringBuilder();
+        while ((line = errorReader.readLine()) != null) {
+            errorMessage.append(line).append(System.lineSeparator());
         }
 
+        // If the exit code is non-zero, throw a RuntimeException with the concrete error message
+        if (exitCode != 0) {
+            String errorOutput = errorMessage.toString().trim();
+            if (errorOutput.isEmpty()) {
+                errorOutput = "No additional error message provided by the process.";
+            }
+            throw new RuntimeException("Classification failed with exit code: " + exitCode + ". Error: " + errorOutput);
+        }
         return result;
     }
 }
