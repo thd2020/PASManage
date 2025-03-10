@@ -35,7 +35,6 @@ public class ReferralRequest {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "to_hospital_id", nullable = false)
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "hospitalId")
     @JsonIdentityReference(alwaysAsId = true)
     @Schema(description = "The hospital to which the patient is referred", example = "7")
     private Hospital toHospital;
@@ -62,6 +61,18 @@ public class ReferralRequest {
     @Column(columnDefinition = "TEXT")
     @Schema(description = "Reason for approval or rejection", example = "Specialist available")
     private String approvalReason;
+
+    @Column(length = 100)
+    @Schema(description = "Name of the doctor who initiated the referral", example = "Dr. Smith")
+    private String doctorName;
+
+    @Column(length = 100)
+    @Schema(description = "Title of the doctor who initiated the referral", example = "Chief Physician")
+    private String doctorTitle;
+
+    @Column(length = 100)
+    @Schema(description = "Department of the doctor who initiated the referral", example = "Obstetrics")
+    private String departmentName;
 
     // Enum representing the status of the referral
     public enum Status {

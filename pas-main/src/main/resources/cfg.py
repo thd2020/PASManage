@@ -98,7 +98,6 @@ def parse_args():
         type=str,
         nargs='+',
         required=True,
-        choices=['placenta', 'bladder', 'background'],
         help="List of target organs to segment",
     )
 

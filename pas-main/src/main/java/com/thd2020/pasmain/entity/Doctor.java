@@ -25,7 +25,7 @@ public class Doctor {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id", nullable = true)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "departmentId")
     @JsonIdentityReference(alwaysAsId = true)
     @JsonBackReference
@@ -39,6 +39,10 @@ public class Doctor {
     @Column(length = 100)
     @Schema(description = "职称", example = "主任医师")
     private String title;
+
+    @Column(nullable = false, length = 20)
+    @Schema(description = "身份证号", example = "123456789012345678")
+    private String passId;
 
     @OneToMany(mappedBy = "doctor")
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")

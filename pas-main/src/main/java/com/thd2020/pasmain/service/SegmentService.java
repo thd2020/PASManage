@@ -267,10 +267,10 @@ public class SegmentService {
         File outputDir = new File(outputDirPath);
         Files.createDirectories(outputDir.toPath());
 
-        // Convert targets array to space-separated string
+        // Convert targets list to space-separated string
         String targetsStr = String.join(" ", targets);
         
-        // Convert prompts map to JSON string
+        // Convert prompts to JSON 
         ObjectMapper mapper = new ObjectMapper();
         String promptsJson = mapper.writeValueAsString(prompts);
 
@@ -281,10 +281,18 @@ public class SegmentService {
             "--model_path", MULTI_SEGMENT_MODEL_PATH,
             "--img_path", imagePath,
             "--work_dir", outputDirPath,
-            "--prompt_type", promptType,
-            "--targets", targetsStr,
-            "--prompts", promptsJson
+            "--prompt_type", promptType
         );
+        
+        pb.command().add("--targets");
+
+        // Add each target as a separate argument
+        for (String target : targets) {
+            pb.command().add(target);
+        }
+        
+        pb.command().add("--prompts");
+        pb.command().add(promptsJson);
 
         // Run process
         Process process = pb.start();

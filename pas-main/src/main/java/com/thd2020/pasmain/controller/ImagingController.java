@@ -367,8 +367,8 @@ public class ImagingController {
                         .body(new FileSystemResource(mask.getSegmentationMaskPath()));
             }
         }
-        return ResponseEntity.status(503)
-            .body("Unauthorised - Not Enough Privileges");
+        return ResponseEntity.status(404)
+            .body("No such mask file");
     }
 
     @Operation(summary = "获取掩膜", description = "获取掩膜详细信息")
@@ -474,8 +474,8 @@ public class ImagingController {
                 分割提示坐标映射，key为目标类型名称，value为该类型对应的坐标JSON字符串。
                 例如：
                 {
-                    "placenta": "[[10,20], [30,40]]",  
-                    "cord": "[[50,60], [70,80]]"
+                    "placenta": [[10,20], [30,40]],  
+                    "bladder": [[50,60], [70,80]]
                 }
                 坐标格式取决于promptType:
                 - point: [[x1,y1], [x2,y2], ...]  
@@ -527,9 +527,88 @@ public class ImagingController {
             return ResponseEntity.status(404).body("No masks were generated");
         }
 
+        maskRepository.saveAllAndFlush(masks);
+
         // Create response with all mask information
         MultiValueMap<String, Object> response = new LinkedMultiValueMap<>();
         response.add("image", savedImage);
+        response.add("masks", masks);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
+    }
+
+    @PostMapping(value = "/multi-segment-exist-image")
+    @Operation(summary = "已有图像多目标分割", description = "对数据库中已有的图像进行多目标分割，返回多个掩膜信息")
+    public ResponseEntity<?> multiSegmentExistingImage(
+            @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
+            @Parameter(description = "提示类型(point/box/mask)", required = true) @RequestParam String promptType,
+            @Parameter(description = "目标类型名称列表，例如：[\"placenta\", \"cord\"]", required = true) 
+            @RequestParam List<String> targets,
+            @Parameter(
+                description = """
+                分割提示坐标映射，key为目标类型名称，value为该类型对应的坐标JSON字符串。
+                例如：
+                {
+                    "placenta": [[10,20], [30,40]],  
+                    "bladder": [[50,60], [70,80]]
+                }
+                坐标格式取决于promptType:
+                - point: [[x1,y1], [x2,y2], ...]  
+                - box: [[x1,y1,x2,y2], ...]
+                - mask: 二值mask的base64编码
+                """,
+                required = true
+            )
+            @RequestParam Map<String, Object> prompts,
+            @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
+        
+        Long patientId = imageRepository.findById(imageId).get().getPatient().getPatientId();
+        String recordId = imageRepository.findById(imageId).get().getImagingRecord().getRecordId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Get existing image
+        Image existingImage = imagingService.getImage(imageId);
+        if (existingImage == null) {
+            return ResponseEntity.status(404).body("Image not found");
+        }
+
+        // Remove non-prompt parameters from prompts map
+        prompts.remove("imageId");
+        prompts.remove("promptType"); 
+        prompts.remove("targets");
+
+        // Perform multi-target segmentation
+        Map<String, String> segmentedImagePaths = segmentService.multiSegmentImagePy(
+            patientId.toString(),
+            recordId,
+            existingImage.getImagePath(),
+            promptType,
+            targets,
+            prompts
+        );
+
+        // Add masks for each target
+        List<Mask> masks = new ArrayList<>();
+        for (Map.Entry<String, String> entry : segmentedImagePaths.entrySet()) {
+            Mask addedMask = imagingService.addMask(imageId, Paths.get(entry.getValue()), "MODEL");
+            if (addedMask != null) {
+                masks.add(addedMask);
+            }
+        }
+
+        if (masks.isEmpty()) {
+            return ResponseEntity.status(404).body("No masks were generated");
+        }
+
+        maskRepository.saveAllAndFlush(masks);
+
+        // Create response with all mask information
+        MultiValueMap<String, Object> response = new LinkedMultiValueMap<>();
+        response.add("image", existingImage);
         response.add("masks", masks);
 
         return ResponseEntity.ok()

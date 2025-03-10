@@ -16,4 +16,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     // 根据姓名查找医生
     List<Doctor> findByName(String name);
+
+    // 根据passId查找医生
+    Doctor findByPassId(String passId);
 }

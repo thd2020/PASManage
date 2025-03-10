@@ -1,6 +1,7 @@
 package com.thd2020.pasmain.service;
 
 import com.thd2020.pasmain.dto.ApiResponse;
+import com.thd2020.pasmain.dto.UserRegistrationRequest;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.User;
 import com.thd2020.pasmain.repository.PatientRepository;
@@ -29,7 +30,11 @@ public class PatientService {
             user.setUsername(patient.getName());
             user.setPassword("Patient123");
             user.setRole(User.Role.PATIENT);
-            userService.registerUser(user);
+            UserRegistrationRequest request = new UserRegistrationRequest();
+            request.setUsername(user.getUsername());
+            request.setPassword(user.getPassword());
+            request.setRole(user.getRole());
+            userService.registerUser(request);
             patient.setUser(user);
         }
         return patientRepository.save(patient);

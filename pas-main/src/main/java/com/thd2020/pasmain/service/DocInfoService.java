@@ -1,5 +1,6 @@
 package com.thd2020.pasmain.service;
 
+import com.thd2020.pasmain.dto.UserRegistrationRequest;
 import com.thd2020.pasmain.entity.*;
 import com.thd2020.pasmain.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,11 @@ public class DocInfoService {
             user.setUsername(doctor.getName());
             user.setPassword("Doctor123");
             user.setRole(doctorType);
-            userService.registerUser(user);
+            UserRegistrationRequest request = new UserRegistrationRequest();
+            request.setUsername(user.getUsername());
+            request.setPassword(user.getPassword());
+            request.setRole(user.getRole());
+            userService.registerUser(request);
             doctor.setUser(user);
         }
         return doctorRepository.save(doctor);

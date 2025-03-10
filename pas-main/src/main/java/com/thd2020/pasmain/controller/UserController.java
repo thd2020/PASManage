@@ -4,6 +4,7 @@ import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.AuthenticationRequest;
 import com.thd2020.pasmain.dto.JwtResponse;
 import com.thd2020.pasmain.dto.RelatedIdsResponse;
+import com.thd2020.pasmain.dto.UserRegistrationRequest;
 import com.thd2020.pasmain.entity.*;
 import com.thd2020.pasmain.service.*;
 import com.thd2020.pasmain.util.JwtUtil;
@@ -56,24 +57,22 @@ public class UserController {
 
     // 用户注册
     @PostMapping("/register")
-    @Operation(summary = "用户注册", description = "允许新用户注册账号。")
+    @Operation(summary = "用户注册", description = "允许新用户注册账号，并关联或创建患者/医生信息。")
     public ApiResponse<User> registerUser(
             @Parameter(description = "用户注册信息", required = true)
-            @RequestBody User user) {
-        User registeredUser = userService.registerUser(user);
-        // 根据角色将用户关联到病人或医生
-        if (user.getRole() == User.Role.PATIENT) {
-            Patient patient = new Patient();
-            patient.setUser(registeredUser);
-            patient.setName(registeredUser.getUsername());
-            patientService.addPatient(patient);
-        } else if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
-            Doctor doctor = new Doctor();
-            doctor.setUser(registeredUser);
-            doctor.setName(registeredUser.getUsername());
-            docInfoService.saveDoctor(doctor, user.getRole());
+            @RequestBody UserRegistrationRequest request) {
+        // Validate required fields
+        if (request.getPassId() == null || request.getPassId().isEmpty() ||
+            request.getName() == null || request.getName().isEmpty()) {
+            return new ApiResponse<>("error", "PassId and name are required", null);
         }
-        return new ApiResponse<>("success", "User registered successfully", registeredUser);
+
+        try {
+            User registeredUser = userService.registerUser(request);
+            return new ApiResponse<>("success", "User registered successfully", registeredUser);
+        } catch (Exception e) {
+            return new ApiResponse<>("error", e.getMessage(), null);
+        }
     }
 
     // 用户登录

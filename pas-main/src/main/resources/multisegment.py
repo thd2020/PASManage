@@ -122,7 +122,7 @@ def main(args):
             points=(point_coords, point_labels),
             boxes=None,
             masks=None,
-            texts=[args.classes]
+            texts=[args.targets]
         )
         pred = net.mask_decoder(
             image_embeddings=imge,
@@ -143,12 +143,12 @@ def main(args):
     base_name = os.path.splitext(os.path.basename(args.img_path))[0]
     
     # Save individual class masks
-    num_classes = len(args.classes)
+    num_classes = len(args.targets)
     unique, counts = torch.unique(pred_masks, return_counts=True)
     masks = F.one_hot(pred_masks, num_classes=num_classes).permute(0, 3, 1, 2).float()
     unique, counts = torch.unique(masks, return_counts=True)
     
-    for idx, target in enumerate(args.classes):
+    for idx, target in enumerate(args.targets):
         if idx == 0:  # Skip background class
             continue
         mask = masks[0, idx].cpu().numpy()
@@ -158,4 +158,5 @@ def main(args):
 
 if __name__ == '__main__':
     args = cfg.parse_args()
+    args.targets.insert(0, 'background')
     main(args)

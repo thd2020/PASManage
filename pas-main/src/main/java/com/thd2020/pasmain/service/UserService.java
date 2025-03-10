@@ -2,6 +2,7 @@ package com.thd2020.pasmain.service;
 
 import com.thd2020.pasmain.dto.ApiResponse;
 import com.thd2020.pasmain.dto.OAuthRequest;
+import com.thd2020.pasmain.dto.UserRegistrationRequest;
 import com.thd2020.pasmain.entity.Doctor;
 import com.thd2020.pasmain.entity.Hospital;
 import com.thd2020.pasmain.entity.Patient;
@@ -53,10 +54,50 @@ public class UserService {
     private final Map<String, String> verificationCodes = new HashMap<>();
 
     // 用户注册
-    public User registerUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public User registerUser(UserRegistrationRequest request) {
+        // Create and set up user
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setRole(request.getRole());
         user.setCreatedAt(LocalDateTime.now());
-        user.setStatus(User.Status.ACTIVE); // 默认设置为ACTIVE
+        user.setStatus(User.Status.ACTIVE);
+
+        // Handle patient registration
+        if (request.getRole() == User.Role.PATIENT) {
+            Patient existingPatient = patientRepository.findByPassId(request.getPassId());
+            if (existingPatient != null) {
+                // Link existing patient to new user
+                existingPatient.setUser(user);
+                patientRepository.save(existingPatient);
+            } else {
+                // Create new patient
+                Patient patient = new Patient();
+                patient.setUser(user);
+                patient.setName(request.getName());
+                patient.setPassId(request.getPassId());
+                patientRepository.save(patient);
+            }
+        }
+        // Handle doctor registration
+        else if (request.getRole() == User.Role.T_DOCTOR || request.getRole() == User.Role.B_DOCTOR) {
+            Doctor existingDoctor = doctorRepository.findByPassId(request.getPassId());
+            if (existingDoctor != null) {
+                // Link existing doctor to new user
+                existingDoctor.setUser(user);
+                doctorRepository.save(existingDoctor);
+            } else {
+                // Create new doctor
+                Doctor doctor = new Doctor();
+                doctor.setUser(user);
+                doctor.setName(request.getName());
+                doctor.setPassId(request.getPassId());
+                doctorRepository.save(doctor);
+            }
+        }
+
         return userRepository.save(user);
     }
 

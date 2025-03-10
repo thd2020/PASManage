@@ -90,23 +90,32 @@ public class ReferralService {
     private String apiKey;  // Inject API Key from application.properties
 
     public ReferralRequest sendReferralRequest(ReferralRequest request, String token) throws JsonProcessingException {
-        // 保存转诊请求到数据库
         Long userId = jwtUtil.extractUserId(token.substring(7));
-        User user =  userService.getUserById(userId).get();
+        User user = userService.getUserById(userId).get();
         request.setRequestDate(LocalDateTime.now());
         request.setStatus(ReferralRequest.Status.PENDING);
         Hospital hospital = new Hospital();
+        
         if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
             Doctor doctor = doctorRepository.findByUser_UserId(userId).get();
             request.setFromUser(user);
             hospital = doctor.getDepartment().getHospital();
             request.setFromHospital(hospital);
+            
+            // Add doctor information
+            request.setDoctorName(doctor.getName());
+            request.setDoctorTitle(doctor.getTitle());
+            request.setDepartmentName(doctor.getDepartment().getDepartmentName());
         }
         else if (user.getRole() == User.Role.ADMIN) {
-            if (user.getHospital() != null){
+            if (user.getHospital() != null) {
                 request.setFromUser(user);
                 hospital = user.getHospital();
                 request.setFromHospital(hospital);
+                
+                // For admin, use admin name
+                request.setDoctorName(user.getUsername());
+                request.setDepartmentName("Administration");
             }
         }
         Long hospitalId = hospital.getHospitalId();
