@@ -14,10 +14,11 @@ import java.util.Map;
 public class ClassificationService {
     
     private final Path pythonScriptPath = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/classify.py");
+    private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/med_sam/bin/python";
 
     public ClassificationResult classifyImage(String imagePath) throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder(
-            "python3",
+            PYTHON_BINARY_PATH,
             pythonScriptPath.toString(),
             "-img_path", imagePath
         );

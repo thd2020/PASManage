@@ -8,6 +8,7 @@ from PIL import Image
 import sys
 import cfg
 import torch.nn.functional as F
+import torchvision.transforms as transforms
 
 # Add the ssam directory to Python path
 ssam_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'ssam')
@@ -50,12 +51,12 @@ def load_model(args):
     checkpoint = torch.load(args.model_path)
     filtered_state_dict = {}
     state_dict = checkpoint['state_dict']
-    for k, v in state_dict.items():
-        if k in net.state_dict():
-            if v.shape == net.state_dict()[k].shape:
-                filtered_state_dict[k] = v
+    # for k, v in state_dict.items():
+    #     if k in net.state_dict():
+    #         if v.shape == net.state_dict()[k].shape:
+    #             filtered_state_dict[k] = v
     # filtered_state_dict = state_dict
-    net.load_state_dict(filtered_state_dict, strict=False)
+    net.load_state_dict(state_dict)
     # optimizer.load_state_dict(checkpoint['optimizer'])
     # net.load_state_dict(checkpoint['state_dict'])
     net.eval()
@@ -64,12 +65,12 @@ def load_model(args):
 def preprocess_image(image_path, image_size):
     # Load and preprocess image
     image = Image.open(image_path).convert('RGB')
-    image = image.resize((image_size, image_size))
-    image = np.array(image)
+    image = transforms.Resize((image_size, image_size))(image)
+    image = transforms.ToTensor()(image)
+    image = image.unsqueeze(0)
     if len(image.shape) == 2:
         image = np.stack([image] * 3, axis=-1)
-    image = torch.from_numpy(image.transpose(2, 0, 1)).float()
-    image = image.unsqueeze(0)
+    unique, counts = torch.unique(image, return_counts=True)
     return image
 
 def process_prompts(args):
@@ -81,9 +82,12 @@ def process_prompts(args):
         all_points = []
         all_labels = []
         for class_name, points in prompts.items():
-            all_points.extend(points)
+            # Convert string representation of points to actual list of points
+            if isinstance(points, str):
+                points = json.loads(points)
+            # Add points as numerical coordinates
+            all_points.extend([list(map(float, point)) for point in points])
             all_labels.extend([class_name] * len(points))
-        
         # Convert to tensor format (B, N, 2)
         point_coords = torch.tensor([all_points], dtype=torch.float32)  # Add batch dimension
         point_labels = [all_labels]  # List of lists for batch format
@@ -118,7 +122,7 @@ def main(args):
             points=(point_coords, point_labels),
             boxes=None,
             masks=None,
-            texts=args.classes
+            texts=[args.classes]
         )
         pred = net.mask_decoder(
             image_embeddings=imge,
@@ -127,6 +131,9 @@ def main(args):
             sparse_prompt_embeddings=se,
             dense_prompt_embeddings=de
         )
+
+        
+        unique, counts = torch.unique(pred, return_counts=True)
 
         # Convert predicted logits to class indices
         pred_masks = torch.argmax(torch.softmax(pred, dim=1), dim=1)
@@ -141,7 +148,7 @@ def main(args):
     masks = F.one_hot(pred_masks, num_classes=num_classes).permute(0, 3, 1, 2).float()
     unique, counts = torch.unique(masks, return_counts=True)
     
-    for idx, target in enumerate(args.classes[0]):
+    for idx, target in enumerate(args.classes):
         if idx == 0:  # Skip background class
             continue
         mask = masks[0, idx].cpu().numpy()

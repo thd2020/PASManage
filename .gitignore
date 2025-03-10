@@ -31,4 +31,30 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Misc ###
+.jpg
+.png
+.gif
+.ico
+.jar
+.war
+.ear
+.zip
+.tar.gz
+.7z
+.rar
+.gz
+.tar
+.class
+.exe
+.dll
+.so
+.o
+.obj
+.lib
+.a
+.dylib
 .pyc
+.pyo
+.pyd

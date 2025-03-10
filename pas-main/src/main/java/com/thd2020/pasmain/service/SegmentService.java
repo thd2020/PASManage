@@ -38,18 +38,19 @@ import static org.bouncycastle.asn1.x500.style.RFC4519Style.c;
 public class SegmentService {
 
     @Value("${resources.root}")
-    private String ResourcesRoot = "/home/lmj/xyx/pas";
+    private String LocalResRoot = "/home/lmj/xyx/pas";
+    private String ResourcesRoot = "/home/lmj/xyx/PASManage/pas-main/src/main/resources";
 
-    private final Path rootLocation = Paths.get(ResourcesRoot);
+    private final Path rootLocation = Paths.get(LocalResRoot);
 
     private final String ENCODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.encoder.onnx").toString();
     private final String DECODER_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "sam-placenta.decoder.onnx").toString();
     private final String OUTPUT_DIR = "output";
-    private final String PYTHON_SCRIPT_PATH = ResourcesRoot+"/segment.py";
-    private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/xyx/bin/python";
+    private final String PYTHON_SCRIPT_PATH = LocalResRoot+"/segment.py";
+    private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/med_sam/bin/python";
     private final String WORKDIR = "workdir";
     private final String MULTI_SEGMENT_SCRIPT_PATH = ResourcesRoot+"/multisegment.py";
-    private final String MULTI_SEGMENT_MODEL_PATH = Paths.get(rootLocation.toString(), "models", "ssam-placenta.pth").toString();
+    private final String MULTI_SEGMENT_MODEL_PATH = "/home/lmj/xyx/ssam/logs/all_ep_60/Model/checkpoint_best.pth";
 
     private final OrtEnvironment env;
     private final OrtSession encoderSession;
@@ -288,9 +289,22 @@ public class SegmentService {
         // Run process
         Process process = pb.start();
         int exitCode = process.waitFor();
+        String line;
 
+
+        // If the exit code is non-zero, throw a RuntimeException with the concrete error message
         if (exitCode != 0) {
-            throw new RuntimeException("Segmentation failed with exit code: " + exitCode);
+            // Capture error message from stderr
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            StringBuilder errorMessage = new StringBuilder();
+            while ((line = errorReader.readLine()) != null) {
+                errorMessage.append(line).append(System.lineSeparator());
+            }
+            String errorOutput = errorMessage.toString().trim();
+            if (errorOutput.isEmpty()) {
+                errorOutput = "No additional error message provided by the process.";
+            }
+            throw new RuntimeException("Classification failed with exit code: " + exitCode + ". Error: " + errorOutput);
         }
 
         // Return paths to all generated masks

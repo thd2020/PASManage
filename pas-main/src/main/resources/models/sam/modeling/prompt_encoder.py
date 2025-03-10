@@ -68,7 +68,7 @@ class PromptEncoder(nn.Module):
 
         # self.text_encoder = AutoModel.from_pretrained('BiomedCLIP').text_model
         # self.tokenizer = AutoTokenizer.from_pretrained('BiomedCLIP')
-        self.clip_model, self.preprocess = create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+        self.med_model, self.preprocess = create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
         self.tokenizer = get_tokenizer('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
         os.environ['http_proxy'] = 'socks5h://127.0.0.1:1080'
         os.environ['https_proxy'] = 'socks5h://127.0.0.1:1080'
@@ -99,14 +99,14 @@ class PromptEncoder(nn.Module):
         #     points = torch.cat([points, padding_point], dim=1) # [b, 2, 2]
         #     labels = torch.cat([labels, padding_label], dim=1) # [b, 2]
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.clip_model = self.clip_model.to(device)
+        self.med_model = self.med_model.to(device)
         points = points.to(device)
         class_embeddings = []
         if len(labels[0])>0:
             for label_set in labels:
                 tokens = self.tokenizer(label_set).to(device)
                 with torch.no_grad():
-                    image_features, class_embedding, logit_scale = self.clip_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
+                    image_features, class_embedding, logit_scale = self.med_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
                     class_embeddings.append(class_embedding)
             class_embeddings = torch.stack(class_embeddings, dim=0)
             point_embedding = self.pe_layer.forward_with_coords(points, self.input_image_size) # [b, 2, 128]
@@ -125,13 +125,13 @@ class PromptEncoder(nn.Module):
         coords = boxes[0] + 0.5  # Shift to center of pixel
         labels = boxes[1]
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.clip_model = self.clip_model.to(device)
+        self.med_model = self.med_model.to(device)
         coords = coords.to(device)
         class_embeddings = []
         for label_set in labels:
                 tokens = self.tokenizer(label_set).to(device)
                 with torch.no_grad():
-                    image_features, class_embedding, logit_scale = self.clip_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
+                    image_features, class_embedding, logit_scale = self.med_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
                     class_embeddings.append(class_embedding)
         class_embeddings = torch.stack(class_embeddings, dim=0)
         class_embeddings = class_embeddings.repeat_interleave(2, dim=1)
@@ -149,13 +149,13 @@ class PromptEncoder(nn.Module):
         coords = masks[0]
         labels = masks[1]
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.clip_model = self.clip_model.to(device)
+        self.med_model = self.med_model.to(device)
         coords = coords.to(device)
         class_embeddings = []
         for label_set in labels:
                 tokens = self.tokenizer(label_set).to(device)
                 with torch.no_grad():
-                    image_features, class_embedding, logit_scale = self.clip_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
+                    image_features, class_embedding, logit_scale = self.med_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
                     class_embeddings.append(class_embedding)
         class_embeddings = torch.stack(class_embeddings, dim=0)
         batch, num, height, width, chan = coords.shape
@@ -172,12 +172,12 @@ class PromptEncoder(nn.Module):
 
     def _embed_texts(self, texts: List[Union[str, List[str]]]) -> torch.Tensor:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.clip_model = self.clip_model.to(device)
+        self.med_model = self.med_model.to(device)
         class_embeddings = []
         for label_set in texts:
                 tokens = self.tokenizer(label_set).to(device)
                 with torch.no_grad():
-                    image_features, class_embedding, logit_scale = self.clip_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
+                    image_features, class_embedding, logit_scale = self.med_model(torch.empty(len(label_set), 3, 224, 224).to(device), tokens)
                     class_embeddings.append(class_embedding)
         text_embedding = torch.stack(class_embeddings, dim=0)
         return text_embedding

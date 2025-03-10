@@ -462,13 +462,29 @@ public class ImagingController {
     }
 
     @PostMapping(value = "/multi-segment-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "多目标图像分割", description = "对一张图像进行多目标分割，返回多个掩膜图像")
+    @Operation(summary = "多目标图像分割", description = "对一张图像进行多目标分割，返回多个掩膜信息")
     public ResponseEntity<?> multiSegmentImage(
             @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
             @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
             @Parameter(description = "提示类型(point/box/mask)", required = true) @RequestParam String promptType,
-            @Parameter(description = "目标类型列表", required = true) @RequestParam List<String> targets,
-            @Parameter(description = "分割提示", required = true) @RequestParam Map<String, Object> prompts,
+            @Parameter(description = "目标类型名称列表，例如：[\"placenta\", \"cord\"]", required = true) 
+            @RequestParam List<String> targets,
+            @Parameter(
+                description = """
+                分割提示坐标映射，key为目标类型名称，value为该类型对应的坐标JSON字符串。
+                例如：
+                {
+                    "placenta": "[[10,20], [30,40]]",  
+                    "cord": "[[50,60], [70,80]]"
+                }
+                坐标格式取决于promptType:
+                - point: [[x1,y1], [x2,y2], ...]  
+                - box: [[x1,y1,x2,y2], ...]
+                - mask: 二值mask的base64编码
+                """,
+                required = true
+            )
+            @RequestParam Map<String, Object> prompts,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
         
         Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
@@ -482,6 +498,11 @@ public class ImagingController {
             return ResponseEntity.status(500).body("Failed to add image");
         }
         Long imageId = savedImage.getImageId();
+
+        // Remove non-prompt parameters from prompts map
+        prompts.remove("recordId");
+        prompts.remove("promptType"); 
+        prompts.remove("targets");
 
         // Perform multi-target segmentation
         Map<String, String> segmentedImagePaths = segmentService.multiSegmentImagePy(
@@ -502,11 +523,18 @@ public class ImagingController {
             }
         }
 
+        if (masks.isEmpty()) {
+            return ResponseEntity.status(404).body("No masks were generated");
+        }
+
+        // Create response with all mask information
         MultiValueMap<String, Object> response = new LinkedMultiValueMap<>();
-        response.add("image_id", imageId);
+        response.add("image", savedImage);
         response.add("masks", masks);
 
-        return ResponseEntity.ok().body(response);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
     }
 }
 
