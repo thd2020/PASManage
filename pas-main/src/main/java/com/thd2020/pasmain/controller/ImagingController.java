@@ -10,6 +10,7 @@ import com.thd2020.pasmain.repository.MaskRepository;
 import com.thd2020.pasmain.repository.PlacentaSegmentationGradingRepository;
 import com.thd2020.pasmain.service.ClassificationService;
 import com.thd2020.pasmain.service.ImagingService;
+import com.thd2020.pasmain.service.PRInfoService;
 import com.thd2020.pasmain.service.PatientService;
 import com.thd2020.pasmain.service.SegmentService;
 import com.thd2020.pasmain.service.UserService;
@@ -17,6 +18,7 @@ import com.thd2020.pasmain.util.JwtUtil;
 import com.thd2020.pasmain.util.UtilFunctions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -78,6 +80,9 @@ public class ImagingController {
 
     @Autowired
     private ClassificationService classificationService;
+
+    @Autowired
+    private PRInfoService prInfoService;
 
     @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
@@ -614,6 +619,106 @@ public class ImagingController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(response);
+    }
+
+    @PostMapping("/{imageId}/multimodal-classify")
+    @Operation(summary = "多模态分类已有图像", description = "对数据库中已有的图像基于多模态信息进行分类")
+    public ResponseEntity<?> multiModalClassify(
+            @Parameter(description = "图像ID", required = true) 
+            @PathVariable Long imageId,
+            @Parameter(description = "使用的模型", 
+                    required = true, 
+                    schema = @io.swagger.v3.oas.annotations.media.Schema(allowableValues = {
+                                    "mlmpas", "mtpas", "vgg16"
+            }))
+            @RequestParam String model,
+            @Parameter(description = "患者ID", required = true)
+            @RequestParam Long patientId) {
+        try {
+            Patient patient = patientService.getPatient(patientId);
+            if (patient == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Get latest medical record
+            List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+            if (records.isEmpty()) {
+                return ResponseEntity.badRequest().body("No medical records found");
+            }
+            MedicalRecord latestRecord = records.get(records.size() - 1);
+            String imagePath = imageRepository.findById(imageId).get().getImagePath();
+
+            // Get classification result
+            ClassificationResult result = classificationService.multiModalClassify(
+                imagePath, 
+                latestRecord,
+                model
+            );
+
+            // Save classification result
+            PlacentaClassificationResult savedResult = 
+                imagingService.addClassification(imageId, result, model.toUpperCase());
+
+            return ResponseEntity.ok(savedResult);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/multimodal-classify-new")
+    @Operation(summary = "多模态分类新图像", description = "对上传的新图像基于多模态信息进行分类")
+    public ResponseEntity<?> multiModalClassifyNew(
+            @Parameter(description = "图像文件", required = true) 
+            @RequestPart("file") MultipartFile image,
+            @Parameter(description = "影像记录ID", required = true) 
+            @RequestParam String recordId,
+            @Parameter(description = "使用的模型", required = true, schema = @Schema(allowableValues = {
+                "mlmpas", "mtpas", "vgg16"
+            }))
+            @RequestParam String model,
+            @RequestHeader("Authorization") String token) throws IOException {
+        
+        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Save the uploaded image first
+        Image savedImage = imagingService.addImage(recordId, image);
+        if (savedImage == null) {
+            return ResponseEntity.status(500).body("Failed to add image");
+        }
+
+        try {
+            Patient patient = patientService.getPatient(patientId);
+            if (patient == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // Get latest medical record
+            List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+            if (records.isEmpty()) {
+                return ResponseEntity.badRequest().body("No medical records found");
+            }
+            MedicalRecord latestRecord = records.get(records.size() - 1);
+
+            // Get classification result
+            ClassificationResult result = classificationService.multiModalClassify(
+                savedImage.getImagePath(),
+                latestRecord,
+                model
+            );
+
+            // Save classification result
+            PlacentaClassificationResult savedResult = 
+                imagingService.addClassification(savedImage.getImageId(), result, model.toUpperCase());
+
+            return ResponseEntity.ok(savedResult);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 }
 

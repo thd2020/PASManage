@@ -111,6 +111,9 @@ public class MedicalRecord {
     @Schema(description = "贫血情况（无/轻度/中度）", example = "NONE")
     private Anemia anemia;
 
+    @Enumerated(EnumType.ORDINAL)
+    private PlacentaPrevia placentaPrevia;
+
     @Lob
     @Schema(description = "患者症状描述", example = "无明显症状")
     private String symptoms;
@@ -139,5 +142,22 @@ public class MedicalRecord {
         MILD,
         @Schema(description = "中度贫血")
         MODERATE
+    }
+
+    public enum PlacentaPrevia {
+        NONE,       // 0
+        LOW,        // 1
+        EDGE,       // 2 
+        PARTIAL,    // 3
+        COMPLETE,   // 4
+        DANGER      // 5
+    }
+
+    public PlacentaPrevia getPlacentaPrevia() {
+        return placentaPrevia;
+    }
+
+    public void setPlacentaPrevia(PlacentaPrevia placentaPrevia) {
+        this.placentaPrevia = placentaPrevia;
     }
 }

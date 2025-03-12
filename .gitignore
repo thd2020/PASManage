@@ -58,3 +58,4 @@ build/
 .pyc
 .pyo
 .pyd
+.pth
