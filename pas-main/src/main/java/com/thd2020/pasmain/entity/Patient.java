@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Data
@@ -62,6 +63,24 @@ public class Patient {
     @JsonBackReference
     @Schema(description = "关联的医生ID")
     private Doctor doctor;
+
+    @OneToMany(mappedBy = "patient")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "recordId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "病历记录ID列表")
+    private List<MedicalRecord> medicalRecords;
+
+    @OneToMany(mappedBy = "patient")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "recordId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "手术和血液检查记录ID列表")
+    private List<SurgeryAndBloodTest> surgeryAndBloodTests;
+
+    @OneToMany(mappedBy = "patient")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "scoreId")
+    @JsonIdentityReference(alwaysAsId = true)
+    @Schema(description = "超声评分记录ID列表")
+    private List<UltrasoundScore> ultrasoundScores;
 
     public enum Gender {
         @Schema(description = "男性")

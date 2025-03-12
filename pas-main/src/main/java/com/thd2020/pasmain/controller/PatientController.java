@@ -63,7 +63,7 @@ public class PatientController {
             @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Patient updatedPatient) {
-        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || (patientService.getPatient(patientId).getUser() != null && utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId()))) {
             Patient patient = patientService.updatePatient(patientId, updatedPatient);
             return new ApiResponse<>(patient!=null?"success":"failure", patient!=null?"Patient updated successfully":"No such patient", patient);
         } else {
