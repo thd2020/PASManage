@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument('-had_abortion', type=int, required=True)
     return parser.parse_args()
 
-def load_model(num_classes=3, ckpt_path="pas-main/src/main/resources/vgg.pth"):
+def load_model(num_classes=3, ckpt_path="/home/lmj/xyx/PASManage/pas-main/src/main/resources/vgg.pth"):
     model = VggMulti(num_classes)
     weight = torch.load(ckpt_path)['state_dict']
     model.load_state_dict(weight, strict=True)
@@ -83,7 +83,7 @@ def load_and_preprocess_image(img_path):
     return transform(img).unsqueeze(0).to(device)
 def process_clinical_data(age, pp, cs, abort):
     age_processed = 1 if age >= 35 else 0
-    return torch.tensor([[age_processed, pp, cs, abort]]).to(device)
+    return torch.tensor([[age_processed, pp, cs, abort]]).float().to(device)
 
 def main():
     args = parse_args()
@@ -102,8 +102,8 @@ def main():
 
     # Get prediction
     with torch.no_grad():
-        output = model(image, clinical_data)
-        probs = torch.softmax(output, dim=1).numpy()
+        output = model([image, clinical_data])
+        probs = torch.softmax(output, dim=1).cpu().numpy()
         pred_class = np.argmax(probs)
         
     # Print results in expected format
