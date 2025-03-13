@@ -42,6 +42,6 @@ public class PlacentaClassificationResult {
     private String predictedType;
 
     public enum ClassificationSource {
-        MODEL, DOCTOR
+        RESNET, DOCTOR, MLMPAS, MTPAS, VGG16
     }
 }

@@ -55,7 +55,7 @@ public class UserService {
 
     // 用户注册
     public User registerUser(UserRegistrationRequest request) {
-        // Create and set up user
+        // First, save the user
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -64,16 +64,20 @@ public class UserService {
         user.setRole(request.getRole());
         user.setCreatedAt(LocalDateTime.now());
         user.setStatus(User.Status.ACTIVE);
-
-        // Handle patient registration
+        user.setProvider(User.Provider.LOCAL);
+        
+        // Save the user first to get the ID
+        user = userRepository.save(user);
+    
+        // Then handle patient registration
         if (request.getRole() == User.Role.PATIENT) {
             Patient existingPatient = patientRepository.findByPassId(request.getPassId());
             if (existingPatient != null) {
-                // Link existing patient to new user
+                // Link existing patient to saved user
                 existingPatient.setUser(user);
                 patientRepository.save(existingPatient);
             } else {
-                // Create new patient
+                // Create new patient with saved user
                 Patient patient = new Patient();
                 patient.setUser(user);
                 patient.setName(request.getName());
@@ -81,15 +85,13 @@ public class UserService {
                 patientRepository.save(patient);
             }
         }
-        // Handle doctor registration
+        // Similar pattern for doctor registration
         else if (request.getRole() == User.Role.T_DOCTOR || request.getRole() == User.Role.B_DOCTOR) {
             Doctor existingDoctor = doctorRepository.findByPassId(request.getPassId());
             if (existingDoctor != null) {
-                // Link existing doctor to new user
                 existingDoctor.setUser(user);
                 doctorRepository.save(existingDoctor);
             } else {
-                // Create new doctor
                 Doctor doctor = new Doctor();
                 doctor.setUser(user);
                 doctor.setName(request.getName());
@@ -97,8 +99,8 @@ public class UserService {
                 doctorRepository.save(doctor);
             }
         }
-
-        return userRepository.save(user);
+    
+        return user;
     }
 
     public User processOAuthPostLogin(String email, String userName) {

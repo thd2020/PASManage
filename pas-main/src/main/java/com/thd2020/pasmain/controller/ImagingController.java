@@ -200,7 +200,7 @@ public class ImagingController {
         PlacentaClassificationResult result = imagingService.addClassification(
             savedImage.getImageId(),
             classificationResult,
-            "MODEL"
+            "RESNET"
         );
 
         if (result == null) {
@@ -210,6 +210,36 @@ public class ImagingController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/classify-exist-image")
+    @Operation(summary = "图像分类", description = "对已存在的图像进行分类")
+    public ResponseEntity<?> classifyExistingImage(
+        @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
+        @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
+        @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
+        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
+        return ResponseEntity.status(401).build();
+        }
+
+        Image existingImage = imagingService.getImage(imageId);
+        if (existingImage == null) {
+        return ResponseEntity.status(404).body("Image not found");
+        }
+
+        ClassificationResult classificationResult = classificationService.classifyImage(existingImage.getImagePath());
+
+        PlacentaClassificationResult result = imagingService.addClassification(
+        existingImage.getImageId(),
+        classificationResult,
+        "RESNET"
+        );
+
+        if (result == null) {
+        return ResponseEntity.status(500).body("Failed to save classification result");
+        }
+
+        return ResponseEntity.ok(result);
+    }
     @Operation(summary = "添加影像记录", description = "管理员和医生可以添加影像记录")
     @PostMapping("/records")
     public ApiResponse<?> addImagingRecord(
@@ -622,40 +652,60 @@ public class ImagingController {
     }
 
     @PostMapping("/{imageId}/multimodal-classify")
-    @Operation(summary = "多模态分类已有图像", description = "对数据库中已有的图像基于多模态信息进行分类")
+    @Operation(summary = "多模态分类已有图像", description = "对数据库中已有的图像基于多模态信息进行分类。可选择使用病历记录的相关信息或手动输入。")
     public ResponseEntity<?> multiModalClassify(
             @Parameter(description = "图像ID", required = true) 
             @PathVariable Long imageId,
-            @Parameter(description = "使用的模型", 
-                    required = true, 
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(allowableValues = {
-                                    "mlmpas", "mtpas", "vgg16"
-            }))
+            @Parameter(description = "使用的模型", required = true, 
+                    schema = @Schema(allowableValues = {"mlmpas", "mtpas", "vgg16"}))
             @RequestParam String model,
             @Parameter(description = "患者ID", required = true)
-            @RequestParam Long patientId) {
+            @RequestParam Long patientId,
+            @Parameter(description = "年龄（可选）。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer age,
+            @Parameter(description = "前置胎盘等级（可选）：0-正常, 1-低置, 2-部分前置, 3-完全前置。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer placentaPrevia,
+            @Parameter(description = "剖宫产次数（可选）。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer cSectionCount,
+            @Parameter(description = "是否有流产史（可选）：0-无, 1-有。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer hadAbortion) {
         try {
             Patient patient = patientService.getPatient(patientId);
             if (patient == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            // Get latest medical record
-            List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
-            if (records.isEmpty()) {
-                return ResponseEntity.badRequest().body("No medical records found");
+            MedicalRecord latestRecord = null;
+            // 只有当任意参数未提供时才获取病历记录
+            if (age == null || placentaPrevia == null || cSectionCount == null || hadAbortion == null) {
+                List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+                if (records.isEmpty()) {
+                    return ResponseEntity.badRequest().body("No medical records found and not all parameters provided");
+                }
+                latestRecord = records.get(records.size() - 1);
             }
-            MedicalRecord latestRecord = records.get(records.size() - 1);
+
+            // 使用提供的参数或从病历记录获取
+            int finalAge = age != null ? age : (latestRecord.getAge() != null ? latestRecord.getAge() : 0);
+            int finalPlacentaPrevia = placentaPrevia != null ? placentaPrevia : 
+                (latestRecord.getPlacentaPrevia() != null ? latestRecord.getPlacentaPrevia().ordinal() : 0);
+            int finalCSectionCount = cSectionCount != null ? cSectionCount : 
+                (latestRecord.getCSectionCount() != null ? latestRecord.getCSectionCount() : 0);
+            int finalHadAbortion = hadAbortion != null ? hadAbortion : 
+                ((latestRecord.getMedicalAbortion() > 0 || latestRecord.getSurgicalAbortion() > 0) ? 1 : 0);
+
             String imagePath = imageRepository.findById(imageId).get().getImagePath();
 
-            // Get classification result
+            // 使用修改后的参数进行分类
             ClassificationResult result = classificationService.multiModalClassify(
-                imagePath, 
-                latestRecord,
+                imagePath,
+                finalAge,
+                finalPlacentaPrevia,
+                finalCSectionCount,
+                finalHadAbortion,
                 model
             );
 
-            // Save classification result
             PlacentaClassificationResult savedResult = 
                 imagingService.addClassification(imageId, result, model.toUpperCase());
 
@@ -666,17 +716,24 @@ public class ImagingController {
         }
     }
 
-    @PostMapping("/multimodal-classify-new")
-    @Operation(summary = "多模态分类新图像", description = "对上传的新图像基于多模态信息进行分类")
+    @PostMapping(value = "/multimodal-classify-new", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "多模态分类新图像", description = "对上传的新图像基于多模态信息进行分类。可选择使用病历记录的相关信息或手动输入。")
     public ResponseEntity<?> multiModalClassifyNew(
             @Parameter(description = "图像文件", required = true) 
             @RequestPart("file") MultipartFile image,
             @Parameter(description = "影像记录ID", required = true) 
             @RequestParam String recordId,
-            @Parameter(description = "使用的模型", required = true, schema = @Schema(allowableValues = {
-                "mlmpas", "mtpas", "vgg16"
-            }))
+            @Parameter(description = "使用的模型", required = true, 
+                    schema = @Schema(allowableValues = {"mlmpas", "mtpas", "vgg16"}))
             @RequestParam String model,
+            @Parameter(description = "年龄（可选）。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer age,
+            @Parameter(description = "前置胎盘等级（可选）：0-正常, 1-低置, 2-部分前置, 3-完全前置。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer placentaPrevia,
+            @Parameter(description = "剖宫产次数（可选）。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer cSectionCount,
+            @Parameter(description = "是否有流产史（可选）：0-无, 1-有。若不提供则从最新病历获取", required = false) 
+            @RequestParam(required = false) Integer hadAbortion,
             @RequestHeader("Authorization") String token) throws IOException {
         
         Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
@@ -684,7 +741,6 @@ public class ImagingController {
             return ResponseEntity.status(401).build();
         }
 
-        // Save the uploaded image first
         Image savedImage = imagingService.addImage(recordId, image);
         if (savedImage == null) {
             return ResponseEntity.status(500).body("Failed to add image");
@@ -696,21 +752,35 @@ public class ImagingController {
                 return ResponseEntity.notFound().build();
             }
 
-            // Get latest medical record
-            List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
-            if (records.isEmpty()) {
-                return ResponseEntity.badRequest().body("No medical records found");
+            MedicalRecord latestRecord = null;
+            // 只有当任意参数未提供时才获取病历记录
+            if (age == null || placentaPrevia == null || cSectionCount == null || hadAbortion == null) {
+                List<MedicalRecord> records = prInfoService.findMedicalRecordIdsByPatientId(patientId);
+                if (records.isEmpty()) {
+                    return ResponseEntity.badRequest().body("No medical records found and not all parameters provided");
+                }
+                latestRecord = records.get(records.size() - 1);
             }
-            MedicalRecord latestRecord = records.get(records.size() - 1);
 
-            // Get classification result
+            // 使用提供的参数或从病历记录获取
+            int finalAge = age != null ? age : (latestRecord.getAge() != null ? latestRecord.getAge() : 0);
+            int finalPlacentaPrevia = placentaPrevia != null ? placentaPrevia : 
+                (latestRecord.getPlacentaPrevia() != null ? latestRecord.getPlacentaPrevia().ordinal() : 0);
+            int finalCSectionCount = cSectionCount != null ? cSectionCount : 
+                (latestRecord.getCSectionCount() != null ? latestRecord.getCSectionCount() : 0);
+            int finalHadAbortion = hadAbortion != null ? hadAbortion : 
+                ((latestRecord.getMedicalAbortion() > 0 || latestRecord.getSurgicalAbortion() > 0) ? 1 : 0);
+
+            // 使用修改后的参数进行分类
             ClassificationResult result = classificationService.multiModalClassify(
                 savedImage.getImagePath(),
-                latestRecord,
+                finalAge,
+                finalPlacentaPrevia,
+                finalCSectionCount, 
+                finalHadAbortion,
                 model
             );
 
-            // Save classification result
             PlacentaClassificationResult savedResult = 
                 imagingService.addClassification(savedImage.getImageId(), result, model.toUpperCase());
 

@@ -70,12 +70,13 @@ public class ClassificationService {
         return result;
     }
     
-    public ClassificationResult multiModalClassify(String imagePath, MedicalRecord record, String model) 
-            throws IOException, InterruptedException {
-        // Determine abortion status
-        int hadAbortion = (record.getMedicalAbortion() > 0 || record.getSurgicalAbortion() > 0) ? 1 : 0;
-        
-        // Select appropriate script
+    public ClassificationResult multiModalClassify(
+        String imagePath, 
+        int age,
+        int placentaPrevia,
+        int cSectionCount,
+        int hadAbortion,
+        String model) throws IOException, InterruptedException {
         Path scriptPath;
         switch(model.toLowerCase()) {
             case "mlmpas": scriptPath = mlmpasPath; break;
@@ -83,20 +84,17 @@ public class ClassificationService {
             case "vgg16": scriptPath = vgg16Path; break;
             default: throw new IllegalArgumentException("Unknown model: " + model);
         }
-        
         ProcessBuilder processBuilder = new ProcessBuilder(
             PYTHON_BINARY_PATH,
             scriptPath.toString(),
             "-img_path", imagePath,
-            "-age", String.valueOf(record.getAge()),
-            "-placenta_previa", String.valueOf(record.getPlacentaPrevia().ordinal()),
-            "-c_section_count", String.valueOf(record.getCSectionCount()),
+            "-age", String.valueOf(age),
+            "-placenta_previa", String.valueOf(placentaPrevia),
+            "-c_section_count", String.valueOf(cSectionCount),
             "-had_abortion", String.valueOf(hadAbortion)
         );
-        
         return executeClassification(processBuilder);
     }
-    
     private ClassificationResult executeClassification(ProcessBuilder processBuilder) 
             throws IOException, InterruptedException {
         Process process = processBuilder.start();
@@ -120,8 +118,20 @@ public class ClassificationService {
         }
         
         int exitCode = process.waitFor();
+        // Capture error message from stderr
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        StringBuilder errorMessage = new StringBuilder();
+        while ((line = errorReader.readLine()) != null) {
+            errorMessage.append(line).append(System.lineSeparator());
+        }
+
+        // If the exit code is non-zero, throw a RuntimeException with the concrete error message
         if (exitCode != 0) {
-            throw new RuntimeException("Classification script failed with exit code: " + exitCode);
+            String errorOutput = errorMessage.toString().trim();
+            if (errorOutput.isEmpty()) {
+                errorOutput = "No additional error message provided by the process.";
+            }
+            throw new RuntimeException("Classification failed with exit code: " + exitCode + ". Error: " + errorOutput);
         }
         
         return result;
