@@ -68,8 +68,20 @@ class PromptEncoder(nn.Module):
 
         # self.text_encoder = AutoModel.from_pretrained('BiomedCLIP').text_model
         # self.tokenizer = AutoTokenizer.from_pretrained('BiomedCLIP')
-        self.med_model, self.preprocess = create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
-        self.tokenizer = get_tokenizer('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+        local_model_path = "/home/lmj/xyx/PASManage/pas-main/src/main/resources/cached_biomedclip_model.pth"
+        if os.path.exists(local_model_path):
+            checkpoint = torch.load(local_model_path)
+            self.med_model = checkpoint['model']
+            self.preprocess = checkpoint['preprocess']
+            self.tokenizer = checkpoint['tokenizer']
+        else:
+            self.med_model, self.preprocess = create_model_from_pretrained('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+            self.tokenizer = get_tokenizer('hf-hub:microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224')
+            torch.save({
+                    'model': self.med_model,
+                    'preprocess': self.preprocess,
+                    'tokenizer': self.tokenizer
+                }, local_model_path)
         os.environ['http_proxy'] = 'socks5h://127.0.0.1:1080'
         os.environ['https_proxy'] = 'socks5h://127.0.0.1:1080'
         os.environ['HUGGINGFACE_TOKEN'] = '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'
