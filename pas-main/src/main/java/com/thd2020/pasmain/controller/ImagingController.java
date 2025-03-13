@@ -501,9 +501,9 @@ public class ImagingController {
     public ResponseEntity<?> multiSegmentImage(
             @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
             @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
-            @Parameter(description = "提示类型(point/box/mask)", required = true) @RequestParam String promptType,
             @Parameter(description = "目标类型名称列表，例如：[\"placenta\", \"cord\"]", required = true) 
-            @RequestParam List<String> targets,
+            @RequestParam(required = true) List<String> targets,
+            @Parameter(description = "提示类型(point/box/mask)", required = false) @RequestParam(required = false) String promptType,
             @Parameter(
                 description = """
                 分割提示坐标映射，key为目标类型名称，value为该类型对应的坐标JSON字符串。
@@ -514,10 +514,10 @@ public class ImagingController {
                 }
                 坐标格式取决于promptType:
                 - point: [[x1,y1], [x2,y2], ...]  
-                - box: [[x1,y1,x2,y2], ...]
+                - box: [[x1,y1,x2,y2], ...]  
                 - mask: 二值mask的base64编码
                 """,
-                required = true
+                schema = @Schema(implementation = Object.class, example = "{\"placenta\":[[10,20],[30,40]],\"bladder\":[[50,60],[70,80]]}")
             )
             @RequestParam Map<String, Object> prompts,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
@@ -535,9 +535,11 @@ public class ImagingController {
         Long imageId = savedImage.getImageId();
 
         // Remove non-prompt parameters from prompts map
-        prompts.remove("recordId");
-        prompts.remove("promptType"); 
-        prompts.remove("targets");
+        if (prompts != null) {
+            prompts.remove("imageId");
+            prompts.remove("promptType"); 
+            prompts.remove("targets");
+        }
 
         // Perform multi-target segmentation
         Map<String, String> segmentedImagePaths = segmentService.multiSegmentImagePy(
@@ -578,9 +580,9 @@ public class ImagingController {
     @Operation(summary = "已有图像多目标分割", description = "对数据库中已有的图像进行多目标分割，返回多个掩膜信息")
     public ResponseEntity<?> multiSegmentExistingImage(
             @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
-            @Parameter(description = "提示类型(point/box/mask)", required = true) @RequestParam String promptType,
             @Parameter(description = "目标类型名称列表，例如：[\"placenta\", \"cord\"]", required = true) 
             @RequestParam List<String> targets,
+            @Parameter(description = "提示类型(point/box/mask)", required = false) @RequestParam(required = false) String promptType,
             @Parameter(
                 description = """
                 分割提示坐标映射，key为目标类型名称，value为该类型对应的坐标JSON字符串。
@@ -594,7 +596,7 @@ public class ImagingController {
                 - box: [[x1,y1,x2,y2], ...]
                 - mask: 二值mask的base64编码
                 """,
-                required = true
+                schema = @Schema(implementation = Object.class, example = "{\"placenta\":[[10,20],[30,40]],\"bladder\":[[50,60],[70,80]]}")
             )
             @RequestParam Map<String, Object> prompts,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
@@ -612,9 +614,11 @@ public class ImagingController {
         }
 
         // Remove non-prompt parameters from prompts map
-        prompts.remove("imageId");
-        prompts.remove("promptType"); 
-        prompts.remove("targets");
+        if (prompts != null) {
+            prompts.remove("imageId");
+            prompts.remove("promptType"); 
+            prompts.remove("targets");
+        }
 
         // Perform multi-target segmentation
         Map<String, String> segmentedImagePaths = segmentService.multiSegmentImagePy(
@@ -651,7 +655,7 @@ public class ImagingController {
                 .body(response);
     }
 
-    @PostMapping("/{imageId}/multimodal-classify")
+    @PostMapping("/{imageId}/multimodal-classify") 
     @Operation(summary = "多模态分类已有图像", description = "对数据库中已有的图像基于多模态信息进行分类。可选择使用病历记录的相关信息或手动输入。")
     public ResponseEntity<?> multiModalClassify(
             @Parameter(description = "图像ID", required = true) 
@@ -659,21 +663,20 @@ public class ImagingController {
             @Parameter(description = "使用的模型", required = true, 
                     schema = @Schema(allowableValues = {"mlmpas", "mtpas", "vgg16"}))
             @RequestParam String model,
-            @Parameter(description = "患者ID", required = true)
-            @RequestParam Long patientId,
-            @Parameter(description = "年龄（可选）。若不提供则从最新病历获取", required = false) 
+            @Parameter(description = "年龄（可选，0表示<35岁，1表示>=35岁）。若不提供则从最新病历获取", required = false) 
             @RequestParam(required = false) Integer age,
-            @Parameter(description = "前置胎盘等级（可选）：0-正常, 1-低置, 2-部分前置, 3-完全前置。若不提供则从最新病历获取", required = false) 
+            @Parameter(description = "前置胎盘类型（可选）：0=无, 1=低置, 2=边缘, 3=部分, 4=完全, 5=凶险。若不提供则从最新病历获取", required = false) 
             @RequestParam(required = false) Integer placentaPrevia,
             @Parameter(description = "剖宫产次数（可选）。若不提供则从最新病历获取", required = false) 
             @RequestParam(required = false) Integer cSectionCount,
             @Parameter(description = "是否有流产史（可选）：0-无, 1-有。若不提供则从最新病历获取", required = false) 
             @RequestParam(required = false) Integer hadAbortion) {
         try {
-            Patient patient = patientService.getPatient(patientId);
+            Patient patient = imageRepository.findById(imageId).get().getPatient();
             if (patient == null) {
                 return ResponseEntity.notFound().build();
             }
+            Long patientId = patient.getPatientId();
 
             MedicalRecord latestRecord = null;
             // 只有当任意参数未提供时才获取病历记录

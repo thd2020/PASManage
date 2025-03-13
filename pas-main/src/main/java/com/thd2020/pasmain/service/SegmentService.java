@@ -266,13 +266,16 @@ public class SegmentService {
         String outputDirPath = String.format("%s/%s/%s/masks/", rootLocation, patientId, recordId);
         File outputDir = new File(outputDirPath);
         Files.createDirectories(outputDir.toPath());
-
-        // Convert targets list to space-separated string
-        String targetsStr = String.join(" ", targets);
+        String promptsJson;
         
         // Convert prompts to JSON 
         ObjectMapper mapper = new ObjectMapper();
-        String promptsJson = mapper.writeValueAsString(prompts);
+        if (prompts == null) {
+            promptsJson = mapper.writeValueAsString(prompts);
+        }
+        else {
+            promptsJson = null;
+        }
 
         // Build command
         ProcessBuilder pb = new ProcessBuilder(
@@ -280,8 +283,7 @@ public class SegmentService {
             MULTI_SEGMENT_SCRIPT_PATH,
             "--model_path", MULTI_SEGMENT_MODEL_PATH,
             "--img_path", imagePath,
-            "--work_dir", outputDirPath,
-            "--prompt_type", promptType
+            "--work_dir", outputDirPath
         );
         
         pb.command().add("--targets");
@@ -290,9 +292,16 @@ public class SegmentService {
         for (String target : targets) {
             pb.command().add(target);
         }
-        
-        pb.command().add("--prompts");
-        pb.command().add(promptsJson);
+
+        if (promptType != null) {
+            pb.command().add("--prompt_type");
+            pb.command().add(promptType);
+        }
+
+        if (promptsJson != null) {
+            pb.command().add("--prompts");
+            pb.command().add(promptsJson);
+        }
 
         // Run process
         Process process = pb.start();

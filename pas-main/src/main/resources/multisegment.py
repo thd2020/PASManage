@@ -75,6 +75,9 @@ def preprocess_image(image_path, image_size):
 
 def process_prompts(args):
     import json
+    if args.prompts is None:
+        args.prompt_type = 'none'
+        return None, None
     prompts = json.loads(args.prompts)
     if args.prompt_type == 'point':
         # Convert format from {"target_name": [[x1,y1], [x2,y2],...], ...} 
@@ -93,11 +96,34 @@ def process_prompts(args):
         point_labels = [all_labels]  # List of lists for batch format
         return point_coords, point_labels
     elif args.prompt_type == 'box':
-        # Expect format: {"target_name": [x1,y1,x2,y2], ...}
-        return {k: torch.tensor(v) for k, v in prompts.items()}
-    else: # mask
-        # Expect format: {"target_name": "mask_path", ...}
-        return {k: torch.from_numpy(np.load(v)) for k, v in prompts.items()}
+        # Convert format from {"target_name": [[x1,y1], [x2,y2]], ...}
+        all_boxes = []
+        all_labels = []
+        for class_name, box in prompts.items():
+            if isinstance(box, str):
+                box = json.loads(box)
+            # Box is already in format [[x1,y1], [x2,y2]]
+            all_boxes.extend(box)
+            # Each box has 2 corner points, so repeat label twice
+            all_labels.extend([class_name])
+        box_coords = torch.tensor([all_boxes], dtype=torch.float32)  # Add batch dimension
+        box_labels = [all_labels]  # List of lists for batch format
+        return box_coords, box_labels
+    elif args.prompt_type == 'mask':
+        # Convert format from {"target_name": "mask_path", ...}
+        all_masks = []
+        all_labels = []
+        for class_name, mask_path in prompts.items():
+            if isinstance(mask_path, str):
+                mask = np.load(mask_path)
+                all_masks.append(mask)
+                all_labels.append(class_name)
+        mask_inputs = torch.tensor([all_masks], dtype=torch.float32)  # Add batch dimension
+        mask_labels = [all_labels]  # List of lists for batch format
+        return mask_inputs, mask_labels
+    else:
+        args.prompt_type = 'none'
+        args.prompts = None # No prompts
 
 def main(args):
     # Set up device
@@ -113,17 +139,40 @@ def main(args):
     
     # Process prompts
     point_coords, point_labels = process_prompts(args)
-    point_coords = point_coords.to(device)
+    if point_coords is not None:
+        point_coords = point_coords.to(device)
     
     # Run inference
     with torch.no_grad():
         imge = net.image_encoder(imgs)
-        se, de, te = net.prompt_encoder(
-            points=(point_coords, point_labels),
-            boxes=None,
-            masks=None,
-            texts=[args.targets]
-        )
+        if args.prompt_type == 'point':
+            se, de, te = net.prompt_encoder(
+                points=(point_coords, point_labels),
+                boxes=None,
+                masks=None,
+                texts=[args.targets]
+            )
+        elif args.prompt_type == 'box':
+            se, de, te = net.prompt_encoder(
+                points=None,
+                boxes=(point_coords, point_labels),
+                masks=None,
+                texts=[args.targets]
+            )
+        elif args.prompt_type == 'mask':
+            se, de, te = net.prompt_encoder(
+                points=None,
+                boxes=None,
+                masks=(point_coords, point_labels),
+                texts=[args.targets]
+            )
+        else:
+            se, de, te = net.prompt_encoder(
+                points=None,
+                boxes=None,
+                masks=None,
+                texts=[args.targets]
+            )
         pred = net.mask_decoder(
             image_embeddings=imge,
             text_embeddings=te,

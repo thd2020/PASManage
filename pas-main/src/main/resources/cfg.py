@@ -88,7 +88,7 @@ def parse_args():
     parser.add_argument(
         "--prompt_type",
         type=str,
-        required=True,
+        required=False,
         choices=['point', 'box', 'mask'],
         help="Type of prompt to use",
     )
@@ -104,7 +104,7 @@ def parse_args():
     parser.add_argument(
         "--prompts",
         type=str,
-        required=True,
+        required=False,
         help="JSON string containing prompts for each target. Format depends on prompt_type.",
     )
 
