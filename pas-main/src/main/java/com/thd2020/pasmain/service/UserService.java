@@ -53,8 +53,34 @@ public class UserService {
 
     private final Map<String, String> verificationCodes = new HashMap<>();
 
+    public void validateRegistration(UserRegistrationRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        if (request.getEmail() != null && !request.getEmail().isEmpty() 
+            && userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+        if (request.getPhone() != null && !request.getPhone().isEmpty() 
+            && userRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new IllegalArgumentException("Phone number already exists");
+        }
+        if (request.getRole() == User.Role.PATIENT) {
+            if (patientRepository.findByPassId(request.getPassId()) != null) {
+                throw new IllegalArgumentException("PassId already exists");
+            }
+        } else if (request.getRole() == User.Role.T_DOCTOR || request.getRole() == User.Role.B_DOCTOR) {
+            if (doctorRepository.findByPassId(request.getPassId()) != null) {
+                throw new IllegalArgumentException("PassId already exists");
+            }
+        }
+    }
+
     // 用户注册
     public User registerUser(UserRegistrationRequest request) {
+        // Add validation before registration
+        validateRegistration(request);
+        
         // First, save the user
         User user = new User();
         user.setUsername(request.getUsername());
@@ -134,6 +160,46 @@ public class UserService {
         } else {
             return Optional.empty();
         }
+    }
+
+    public Optional<User> loginWithPhone(String phone, String password) {
+        Optional<User> userOpt = userRepository.findByPhone(phone);
+        if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
+            User user = userOpt.get();
+            user.setLastLogin(LocalDateTime.now());
+            return Optional.of(userRepository.save(user));
+        }
+        return Optional.empty();
+    }
+
+    public Optional<User> loginWithEmail(String email, String password) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
+            User user = userOpt.get();
+            user.setLastLogin(LocalDateTime.now());
+            return Optional.of(userRepository.save(user));
+        }
+        return Optional.empty();
+    }
+
+    public Optional<User> loginWithPassId(String passId, String password) {
+        Optional<Patient> patientOpt = Optional.ofNullable(patientRepository.findByPassId(passId));
+        Optional<Doctor> doctorOpt = Optional.ofNullable(doctorRepository.findByPassId(passId));
+        
+        if (patientOpt.isPresent()) {
+            User user = patientOpt.get().getUser();
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                user.setLastLogin(LocalDateTime.now());
+                return Optional.of(userRepository.save(user));
+            }
+        } else if (doctorOpt.isPresent()) {
+            User user = doctorOpt.get().getUser();
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                user.setLastLogin(LocalDateTime.now());
+                return Optional.of(userRepository.save(user));
+            }
+        }
+        return Optional.empty();
     }
 
     public void generateAndSendCode(String phone) throws IOException {

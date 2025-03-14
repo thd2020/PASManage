@@ -28,7 +28,7 @@ class LVMClassifier(torch.nn.Module):
 if __name__ == '__main__':
     types = ['normal', 'accreta', 'increta']
     parser = argparse.ArgumentParser()
-    parser.add_argument('-ckpt_path', type=str, default='pas-main/src/main/resources/vlm.pth', help='model checkpoint path')
+    parser.add_argument('-ckpt_path', type=str, default='/home/lmj/xyx/PASManage/pas-main/src/main/resources/vlm.pth', help='model checkpoint path')
     parser.add_argument('-device', type=str, default='cuda:0', help='device')
     parser.add_argument('-img_path', type=str, default='/home/lmj/xyx/sda2/data_demo/分割图片/植入/1656334_漆旭/1.2.410.200001.1.11801.787041058.3.20200722.1151215142.677.9 - 副本.jpg', help='image path')
     args = parser.parse_args()

@@ -95,6 +95,48 @@ public class UserController {
         }
     }
 
+    @PostMapping("/login/phone")
+    @Operation(summary = "手机号登录", description = "允许用户使用手机号和密码登录。")
+    public ApiResponse<JwtResponse> loginWithPhone(
+            @Parameter(description = "手机号", required = true) @RequestParam String phone,
+            @Parameter(description = "密码", required = true) @RequestParam String password) {
+        Optional<User> userOpt = userService.loginWithPhone(phone, password);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            return new ApiResponse<>("success", "Login successful", new JwtResponse(token, user));
+        }
+        return new ApiResponse<>("error", "Invalid phone number or password", null);
+    }
+
+    @PostMapping("/login/email")
+    @Operation(summary = "邮箱登录", description = "允许用户使用邮箱和密码登录。")
+    public ApiResponse<JwtResponse> loginWithEmail(
+            @Parameter(description = "邮箱", required = true) @RequestParam String email,
+            @Parameter(description = "密码", required = true) @RequestParam String password) {
+        Optional<User> userOpt = userService.loginWithEmail(email, password);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            return new ApiResponse<>("success", "Login successful", new JwtResponse(token, user));
+        }
+        return new ApiResponse<>("error", "Invalid email or password", null);
+    }
+
+    @PostMapping("/login/passid")
+    @Operation(summary = "证件号登录", description = "允许用户使用证件号和密码登录。")
+    public ApiResponse<JwtResponse> loginWithPassId(
+            @Parameter(description = "证件号", required = true) @RequestParam String passId,
+            @Parameter(description = "密码", required = true) @RequestParam String password) {
+        Optional<User> userOpt = userService.loginWithPassId(passId, password);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String token = jwtUtil.generateToken(user.getUserId(), user.getUsername());
+            return new ApiResponse<>("success", "Login successful", new JwtResponse(token, user));
+        }
+        return new ApiResponse<>("error", "Invalid passId or password", null);
+    }
+
     // Google OAuth2 登录成功回调
     @GetMapping("/login/oauth2/success")
     @Operation(summary = "Google OAuth2 登录成功回调", description = "处理Google OAuth2登录成功后的回调。")
