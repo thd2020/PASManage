@@ -18,6 +18,7 @@ import com.thd2020.pasmain.entity.Resource;
 import com.thd2020.pasmain.exception.ResourceNotFoundException;
 import com.thd2020.pasmain.service.ResourceFetcherService;
 import com.thd2020.pasmain.service.ResourceService;
+import com.thd2020.pasmain.util.UtilFunctions;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +44,7 @@ import java.util.List;
 @Slf4j
 @Validated
 @RestController
-@RequestMapping("/api/resources")
+@RequestMapping("/api/v1/resources")
 @Tag(name = "Resource Management", description = "APIs for managing and retrieving resources")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ResourceController {
@@ -54,6 +54,9 @@ public class ResourceController {
     @Autowired
     private ResourceFetcherService resourceFetcherService;
 
+    @Autowired
+    private UtilFunctions utilFunctions;
+
     @Operation(summary = "Get all resources", description = "Retrieves a list of all available resources")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved resources"),
@@ -62,8 +65,13 @@ public class ResourceController {
     })
     @Cacheable(value = "resourcesList", unless = "#result == null")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<ResourceDTO>> getAllResources() {
-        return ResponseEntity.ok(resourceService.getAllResources());
+    public ResponseEntity<List<ResourceDTO>> getAllResources(
+            @Parameter(description = "JWT token for authentication", required = true)
+            @RequestHeader("Authorization") String token) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
+            return ResponseEntity.ok(resourceService.getAllResources());
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @Operation(summary = "Get resources by category")
@@ -95,11 +103,15 @@ public class ResourceController {
     }
 
     @Operation(summary = "Trigger manual resource fetch")
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/fetch")
-    public ResponseEntity<Void> triggerManualFetch() {
-        resourceService.triggerManualFetch();
-        return ResponseEntity.accepted().build();
+    public ResponseEntity<Void> triggerManualFetch(
+            @Parameter(description = "JWT token for authentication", required = true)
+            @RequestHeader("Authorization") String token) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
+            resourceService.triggerManualFetch();
+            return ResponseEntity.accepted().build();
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @Operation(summary = "Get resource by ID")
@@ -180,10 +192,13 @@ public class ResourceController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Resource created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"),
         @ApiResponse(responseCode = "415", description = "Unsupported file type")
     })
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResourceDTO> uploadResource(
+            @Parameter(description = "JWT token for authentication", required = true)
+            @RequestHeader("Authorization") String token,
             @Parameter(description = "Resource file to upload")
             @RequestParam("file") MultipartFile file,
             @Parameter(description = "Resource category")
@@ -192,6 +207,10 @@ public class ResourceController {
             @RequestParam(required = false) String resourceType,
             @Parameter(description = "Resource description")
             @RequestParam(required = false) String description) {
+        
+        if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         
         log.info("Receiving upload request for file: {}", file.getOriginalFilename());
         

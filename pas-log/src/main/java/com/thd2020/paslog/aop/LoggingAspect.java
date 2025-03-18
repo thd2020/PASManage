@@ -1,5 +1,6 @@
 package com.thd2020.paslog.aop;
 
+import com.thd2020.paslog.entity.LogEntry;
 import com.thd2020.paslog.service.LogService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -33,6 +34,33 @@ public class LoggingAspect {
 
         // Log the action
         logService.createLog(userId, action, details, LocalDateTime.now());
+    }
+
+    @AfterReturning(pointcut = "execution(* com.thd2020.pasmain.controller.*.*(..))", returning = "result")
+    public void logAfterEndpointExecution(JoinPoint joinPoint, Object result) {
+        String methodName = joinPoint.getSignature().getName();
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String serviceName = "pas-main";
+        
+        // Extract method arguments
+        Object[] args = joinPoint.getArgs();
+
+        // Extract user information
+        String userId = extractUserId(args);
+
+        // Create detailed log entry
+        LogEntry logEntry = new LogEntry();
+        logEntry.setUserId(userId);
+        logEntry.setServiceName(serviceName);
+        logEntry.setClassName(className);
+        logEntry.setMethodName(methodName);
+        logEntry.setAction(methodName);
+        logEntry.setTimestamp(LocalDateTime.now());
+        logEntry.setLevel(LogEntry.LogLevel.INFO);
+        logEntry.setDetails(determineDetails(methodName, args, result));
+
+        // Save log entry
+        logService.createLog(userId, logEntry.getAction(), logEntry.getDetails(), logEntry.getTimestamp());
     }
 
     private String extractUserId(Object[] args) {
