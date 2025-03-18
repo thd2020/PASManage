@@ -22,9 +22,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
-import org.springframewsork.http.HttpHeaders;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -171,6 +174,37 @@ public class ResourceController {
             @PathVariable @Min(1) Long resourceId) {
         ResourceDTO metadata = resourceService.getResourceById(resourceId);
         return ResponseEntity.ok(metadata);
+    }
+
+    @Operation(summary = "Upload a new resource")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Resource created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input"),
+        @ApiResponse(responseCode = "415", description = "Unsupported file type")
+    })
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResourceDTO> uploadResource(
+            @Parameter(description = "Resource file to upload")
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Resource category")
+            @RequestParam(required = false) String category,
+            @Parameter(description = "Resource type")
+            @RequestParam(required = false) String resourceType,
+            @Parameter(description = "Resource description")
+            @RequestParam(required = false) String description) {
+        
+        log.info("Receiving upload request for file: {}", file.getOriginalFilename());
+        
+        try {
+            ResourceDTO uploadedResource = resourceService.uploadResource(file, category, resourceType, description);
+            return ResponseEntity.status(HttpStatus.CREATED).body(uploadedResource);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid upload request: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (IOException e) {
+            log.error("File upload failed: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to process file upload");
+        }
     }
 
     /**

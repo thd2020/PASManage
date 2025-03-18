@@ -16,6 +16,7 @@ public class Resource {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
     private String identifier;
     private String sourceUrl;
     private String title;
@@ -24,6 +25,7 @@ public class Resource {
     private String category; // PREDICTION, PREVENTION, TREATMENT, etc.
     private String fileUrl;
     private String localPath;
+    private Long fileSize;
     private String mimeType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
