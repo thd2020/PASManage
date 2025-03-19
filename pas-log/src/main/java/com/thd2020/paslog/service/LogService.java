@@ -49,4 +49,12 @@ public class LogService {
     public List<LogEntry> getServiceLogs(String serviceName) {
         return logRepository.findByServiceName(serviceName);
     }
+
+    public List<LogEntry> findByLevelAndServiceName(LogEntry.LogLevel level, String serviceName) {
+        return logRepository.findByLevelAndServiceName(level, serviceName);
+    }
+
+    public List<LogEntry> searchLogs() {
+        return logRepository.findAll();
+    }
 }

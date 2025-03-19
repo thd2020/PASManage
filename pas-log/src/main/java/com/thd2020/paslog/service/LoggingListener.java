@@ -31,6 +31,7 @@ public class LoggingListener {
             LogEntry logEntry = new LogEntry();
             
             // Map DTO fields to entity
+            logEntry.setUserId(dto.getUserId());
             logEntry.setTimestamp(dto.getTimestamp());
             logEntry.setLevel(LogEntry.LogLevel.valueOf(dto.getLevel()));
             logEntry.setServiceName(dto.getServiceName());
@@ -41,6 +42,8 @@ public class LoggingListener {
             logEntry.setRequestPath(dto.getRequestPath());
             logEntry.setRequestMethod(dto.getRequestMethod());
             logEntry.setRequestParams(dto.getRequestParams());
+            logEntry.setErrorStack(dto.getErrorStack());
+            logEntry.setResponseStatus(dto.getResponseStatus());
             
             // Save to database
             logRepository.save(logEntry);
