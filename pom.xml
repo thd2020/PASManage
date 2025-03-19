@@ -14,6 +14,10 @@
         <module>pas-api</module>
     </modules>
 
+    <properties>
+        <spring-kafka.version>3.3.3</spring-kafka.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -26,6 +30,17 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>${spring-kafka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka-test</artifactId>
+                <version>${spring-kafka.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
