@@ -7,11 +7,18 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"patient", "doctor"}) // Exclude fields that cause circular references
+@EqualsAndHashCode(exclude = {"patient", "doctor"})
 @Schema(description = "病历记录")
 public class MedicalRecord {
 

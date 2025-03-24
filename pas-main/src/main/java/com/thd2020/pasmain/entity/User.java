@@ -6,6 +6,11 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -13,7 +18,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"hospital"})
+@EqualsAndHashCode(exclude = {"hospital"})
 @Schema(description = "用户注册信息")
 public class User implements UserDetails {
 
