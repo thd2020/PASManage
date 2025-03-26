@@ -4,13 +4,21 @@ import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import org.springframework.core.io.Resource;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Data
+@ToString(exclude = {"images"}) // Replace @Data with more specific annotations
+@Getter
+@Setter
+@EqualsAndHashCode(exclude = {"images"})
 @Schema(description = "影像检测记录")
 public class ImagingRecord {
 

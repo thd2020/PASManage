@@ -1,5 +1,6 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,9 +21,10 @@ import lombok.Data;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "patient_id", nullable = false)
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId", scope = Patient.class)
     @JsonIdentityReference(alwaysAsId = true)
-    @Schema(description = "关联的患者ID")
+    @JsonBackReference
+    @Schema(description = "关联的患者ID", ref = "Patient")
     @JsonProperty("patient")
     private Patient patient;
 

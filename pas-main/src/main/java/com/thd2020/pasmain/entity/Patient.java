@@ -72,22 +72,16 @@ public class Patient {
     private Doctor doctor;
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL)
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "recordId")
-    @JsonIdentityReference(alwaysAsId = true)
     @JsonManagedReference
     @Schema(description = "病历记录ID列表")
     private List<MedicalRecord> medicalRecords;
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL)
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "recordId")
-    @JsonIdentityReference(alwaysAsId = true)
     @JsonManagedReference
     @Schema(description = "手术和血液检查记录ID列表")
     private List<SurgeryAndBloodTest> surgeryAndBloodTests;
 
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL)
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "scoreId")
-    @JsonIdentityReference(alwaysAsId = true)
     @JsonManagedReference
     @Schema(description = "超声评分记录ID列表")
     private List<UltrasoundScore> ultrasoundScores;

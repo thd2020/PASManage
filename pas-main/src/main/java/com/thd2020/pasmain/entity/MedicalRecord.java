@@ -1,5 +1,6 @@
 package com.thd2020.pasmain.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,8 +32,8 @@ public class MedicalRecord {
     @JoinColumn(name = "patient_id", nullable = false)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "patientId")
     @JsonIdentityReference(alwaysAsId = true)
+    @JsonBackReference
     @Schema(description = "关联的患者ID")
-    @JsonProperty("patient")
     private Patient patient;
 
     @Column(nullable = false)

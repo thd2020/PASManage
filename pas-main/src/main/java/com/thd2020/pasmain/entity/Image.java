@@ -7,12 +7,20 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
 import org.springframework.core.io.Resource;
 
 import java.util.List;
 
 @Entity
-@Data
+@ToString(exclude = {"imagingRecord", "masks"}) // Replace @Data with more specific annotations
+@Getter
+@Setter
+@EqualsAndHashCode(exclude = {"imagingRecord", "masks"})
 @Schema(description = "影像图像")
 public class Image {
 
