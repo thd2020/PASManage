@@ -1,0 +1,87 @@
+{"properties": [
+  {
+    "name": "resources.root",
+    "type": "java.lang.String",
+    "description": "Where the PAS resources (e.g. templates, static files) are located. Mainly for image records."
+  },
+  {
+    "name": "server.ip",
+    "type": "java.lang.String",
+    "description": "The IP address of the server. Used for generating URLs."
+  },
+  {
+    "name": "resource.upload.dir",
+    "type": "java.lang.String",
+    "description": "The directory where uploaded resources are stored."
+  },
+  {
+    "name": "unimtx.api.key",
+    "type": "java.lang.String",
+    "description": "The API key for the Unimatrix API."
+  },
+  {
+    "name": "unimtx.send-otp.url",
+    "type": "java.lang.String",
+    "description": "The URL for sending an OTP via the Unimatrix API."
+  },
+  {
+    "name": "unimtx.verify-otp.url",
+    "type": "java.lang.String",
+    "description": "The URL for verifying an OTP via the Unimatrix API."
+  },
+  {
+    "name": "app.api-key",
+    "type": "java.lang.String",
+    "description": "The API key for the PAS API. Used for referral requests."
+  },
+  {
+    "name": "resource.fetch.enabled",
+    "type": "java.lang.String",
+    "description": "Whether to enable fetching resources from the Unimatrix API."
+  },
+  {
+    "name": "resource.fetch.interval",
+    "type": "java.lang.String",
+    "description": "The interval at which to fetch resources from the Unimatrix API."
+  },
+  {
+    "name": "resource.download.path",
+    "type": "java.lang.String",
+    "description": "The path to download resources from internet through fetching."
+  },
+  {
+    "name": "pubmed.api.key",
+    "type": "java.lang.String",
+    "description": "The API key for the PubMed API."
+  },
+  {
+    "name": "baidu.api.key",
+    "type": "java.lang.String",
+    "description": "The API key for the Baidu API."
+  },
+  {
+    "name": "baidu.search.url",
+    "type": "java.lang.String",
+    "description": "The URL for searching resources via the Baidu API."
+  },
+  {
+    "name": "bing.search.url",
+    "type": "java.lang.String",
+    "description": "API URL for Bing search."
+  },
+  {
+    "name": "bing.api.key",
+    "type": "java.lang.String",
+    "description": "API key for Bing search."
+  },
+  {
+    "name": "bilibili.search.url",
+    "type": "java.lang.String",
+    "description": "The URL for searching resources via the Bilibili API."
+  },
+  {
+    "name": "bilibili.cookie",
+    "type": "java.lang.String",
+    "description": "The cookie for the Bilibili API."
+  }
+]}
