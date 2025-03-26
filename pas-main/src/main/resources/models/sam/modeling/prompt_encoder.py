@@ -82,9 +82,6 @@ class PromptEncoder(nn.Module):
                     'preprocess': self.preprocess,
                     'tokenizer': self.tokenizer
                 }, local_model_path)
-        os.environ['http_proxy'] = 'socks5h://127.0.0.1:1080'
-        os.environ['https_proxy'] = 'socks5h://127.0.0.1:1080'
-        os.environ['HUGGINGFACE_TOKEN'] = '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'
 
     def get_dense_pe(self) -> torch.Tensor:
         """
