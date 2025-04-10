@@ -76,6 +76,7 @@ public class ReferralRequest {
 
     // Enum representing the status of the referral
     public enum Status {
+        UNSENT,
         PENDING,
         APPROVED,
         REJECTED

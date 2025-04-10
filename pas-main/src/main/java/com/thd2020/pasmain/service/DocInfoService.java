@@ -72,11 +72,11 @@ public class DocInfoService {
         return hospitalRepository.save(hospital);
     }
 
-    public Optional<Hospital> getHospitalById(Long hospitalId) {
+    public Optional<Hospital> getHospitalById(String hospitalId) {
         return hospitalRepository.findById(hospitalId);
     }
 
-    public Optional<Hospital> updateHospital(Long hospitalId, Hospital updatedHospital) {
+    public Optional<Hospital> updateHospital(String hospitalId, Hospital updatedHospital) {
         return hospitalRepository.findById(hospitalId).map(hospital -> {
             hospital.setName(updatedHospital.getName());
             hospital.setAddress(updatedHospital.getAddress());
@@ -89,7 +89,7 @@ public class DocInfoService {
         });
     }
 
-    public boolean deleteHospital(Long hospitalId) {
+    public boolean deleteHospital(String hospitalId) {
         return hospitalRepository.findById(hospitalId).map(hospital -> {
             hospitalRepository.delete(hospital);
             return true;
@@ -126,7 +126,7 @@ public class DocInfoService {
         return doctorRepository.findByDepartment_DepartmentId(departmentId);
     }
 
-    public List<Department> getDepartmentsByHospital(Long hospitalId) {
+    public List<Department> getDepartmentsByHospital(String hospitalId) {
         return departmentRepository.findByHospital_HospitalId(hospitalId);
     }
 

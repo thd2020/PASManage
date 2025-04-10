@@ -20,12 +20,14 @@ import org.springframework.web.client.RestTemplate;
 import jakarta.persistence.EntityNotFoundException;
 
 import com.thd2020.pasmain.dto.ReferralBundleDTO;
+import com.thd2020.pasmain.entity.Hospital;
 import com.thd2020.pasmain.entity.MedicalRecord;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.ReferralRequest;
 import com.thd2020.pasmain.entity.SurgeryAndBloodTest;
 import com.thd2020.pasmain.entity.UltrasoundScore;
 import com.thd2020.pasmain.entity.Patient.ReferralStatus;
+import com.thd2020.pasmain.repository.HospitalRepository;
 import com.thd2020.pasmain.repository.MedicalRecordRepository;
 import com.thd2020.pasmain.repository.PatientRepository;
 import com.thd2020.pasmain.repository.ReferralRequestRepository;
@@ -52,6 +54,9 @@ public class ReferralReceiverService {
 
     @Autowired
     private SurgeryAndBloodTestRepository surgeryAndBloodTestRepository;
+
+    @Autowired
+    private HospitalRepository hospitalRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -126,11 +131,15 @@ public class ReferralReceiverService {
         // Set the status to PENDING by default when receiving a new referral request
         referral.setStatus(ReferralRequest.Status.PENDING);
         // Save to the database
-        ReferralRequest savedRequest = referralRequestRepository.save(referral);
+        // Check if fromHospital exists in the database
+        if (!hospitalRepository.existsById(referral.getFromHospital().getHospitalId())) {
+            hospitalRepository.save(referral.getFromHospital());
+        }
         patientRepository.save(patient);
         medicalRecordRepository.saveAll(medicalRecords);
         ultrasoundScoreRepository.saveAll(ultrasoundScores);
         surgeryAndBloodTestRepository.saveAll(surgeryAndBloodTests);
+        ReferralRequest savedRequest = referralRequestRepository.save(referral);
         // 处理接收到的转诊请求       // Send notification to the front-end via WebSocket
         String notificationMessage = String.format("Referral Request ID %d about patient %s has been received", 
         referral.getRequestId(), 

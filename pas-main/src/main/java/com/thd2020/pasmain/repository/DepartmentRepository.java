@@ -11,5 +11,5 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     List<Department> findByDepartmentName(String departmentName);
 
     // 根据医院ID查找科室
-    List<Department> findByHospital_HospitalId(Long hospitalId);
+    List<Department> findByHospital_HospitalId(String hospitalId);
 }

@@ -16,9 +16,8 @@ import java.util.List;
 public class Hospital {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "医院ID", example = "1")
-    private Long hospitalId;
+    private String hospitalId;
 
     @Column(nullable = false, length = 100)
     @Schema(description = "医院名称", example = "北京协和医院")

@@ -44,7 +44,7 @@ public class DocInfoController {
     @GetMapping("/hospitals/{hospitalId}")
     @Operation(summary = "获取医院信息", description = "所有人都能查看医院信息")
     public ApiResponse<Optional<Hospital>> getHospital(
-            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
+            @Parameter(description = "医院ID", required = true) @PathVariable String hospitalId) {
         Optional<Hospital> hospital = docInfoService.getHospitalById(hospitalId);
         return new ApiResponse<>(hospital.isPresent()?"success":"failure", hospital.isPresent()?"Hospital fetched successfully":"No such hospital", hospital);
     }
@@ -53,7 +53,7 @@ public class DocInfoController {
     @Operation(summary = "更新医院信息", description = "仅管理员和医生可以更新医院信息")
     public ApiResponse<Optional<Hospital>> updateHospital(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
-            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId,
+            @Parameter(description = "医院ID", required = true) @PathVariable String hospitalId,
             @RequestBody Hospital updatedHospital) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             Optional<Hospital> hospital = docInfoService.updateHospital(hospitalId, updatedHospital);
@@ -67,7 +67,7 @@ public class DocInfoController {
     @Operation(summary = "删除医院信息", description = "仅管理员可以删除医院信息")
     public ApiResponse<Boolean> deleteHospital(
             @Parameter(description = "JWT token用于身份验证", required = true) @RequestHeader("Authorization") String token,
-            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
+            @Parameter(description = "医院ID", required = true) @PathVariable String hospitalId) {
         if (utilFunctions.isAdmin(token)) {
             boolean result = docInfoService.deleteHospital(hospitalId);
             return new ApiResponse<>(result?"success":"failure", result?"Hospital deleted successfully":"No such hospital", result);
@@ -197,7 +197,7 @@ public class DocInfoController {
     @GetMapping("/departments/hospital/{hospitalId}")
     @Operation(summary = "获取医院中的所有科室", description = "所有人都能查看医院中的所有科室")
     public ApiResponse<List<Department>> getDepartmentsByHospital(
-            @Parameter(description = "医院ID", required = true) @PathVariable Long hospitalId) {
+            @Parameter(description = "医院ID", required = true) @PathVariable String hospitalId) {
         List<Department> departments = docInfoService.getDepartmentsByHospital(hospitalId);
         return new ApiResponse<>("success", "Departments fetched successfully", departments);
     }

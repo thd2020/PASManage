@@ -93,7 +93,7 @@ public class ReferralService {
         Long userId = jwtUtil.extractUserId(token.substring(7));
         User user = userService.getUserById(userId).get();
         request.setRequestDate(LocalDateTime.now());
-        request.setStatus(ReferralRequest.Status.PENDING);
+        request.setStatus(ReferralRequest.Status.UNSENT);
         Hospital hospital = new Hospital();
         
         if (user.getRole() == User.Role.T_DOCTOR || user.getRole() == User.Role.B_DOCTOR) {
@@ -118,16 +118,12 @@ public class ReferralService {
                 request.setDepartmentName("Administration");
             }
         }
-        Long hospitalId = hospital.getHospitalId();
+        String hospitalId = hospital.getHospitalId();
         Long patientId = request.getPatient().getPatientId();
-        if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId)) {
+        if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId) && referralRequestRepository.getReferenceById(patientId).getStatus() != ReferralRequest.Status.UNSENT) {
             throw new IllegalArgumentException("Referral request already exists for this patient and hospital.");
         }
         referralRequestRepository.save(request);
-
-        if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId)) {
-            return null;
-        }
 
         ReferralBundleDTO referralBundleDTO = new ReferralBundleDTO();
 
@@ -159,6 +155,7 @@ public class ReferralService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<ReferralBundleDTO> requestEntity = new HttpEntity<ReferralBundleDTO>(referralBundleDTO, headers);
         ResponseEntity<String> response = restTemplate.exchange(destinationUrl, HttpMethod.POST, requestEntity, String.class);
+        request.setStatus(ReferralRequest.Status.PENDING);
         return request;
     }
 

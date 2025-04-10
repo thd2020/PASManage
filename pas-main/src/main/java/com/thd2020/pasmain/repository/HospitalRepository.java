@@ -6,7 +6,7 @@ import com.thd2020.pasmain.entity.Hospital;
 import java.util.List;
 
 @Repository
-public interface HospitalRepository extends JpaRepository<Hospital, Long> {
+public interface HospitalRepository extends JpaRepository<Hospital, String> {
     // 根据名称查找医院
     List<Hospital> findByName(String name);
 

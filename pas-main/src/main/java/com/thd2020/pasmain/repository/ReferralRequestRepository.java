@@ -14,6 +14,6 @@ import java.util.List;
 public interface ReferralRequestRepository extends JpaRepository<ReferralRequest, Long> {
     List<ReferralRequest> findByPatient(Patient patient);
     List<ReferralRequest> findByToHospital(Hospital toHospital);
-    boolean existsByFromHospital_HospitalIdAndPatient_PatientId(Long fromHospitalId, Long patientId);
+    boolean existsByFromHospital_HospitalIdAndPatient_PatientId(String fromHospitalId, Long patientId);
 }
 
