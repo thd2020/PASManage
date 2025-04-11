@@ -8,8 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface PatientRepository extends JpaRepository<Patient, String> {
-    // 根据身份证查找患者
-    Patient findByPassId(String passId);
 
     // 根据用户ID查找患者
     Optional<Patient> findByUser_UserId(Long userId);
