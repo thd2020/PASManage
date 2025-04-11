@@ -92,7 +92,7 @@ public class ImagingController {
             @Parameter(description = "分割提示类型", required = true) @RequestParam String hintType,
             @Parameter(description = "提示坐标", required = false) @RequestParam Map<String, Object> hintCoordinates,
             @RequestHeader("Authorization") String token) throws IOException, OrtException, InterruptedException {
-        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             return ResponseEntity
                     .status(401)
@@ -140,7 +140,7 @@ public class ImagingController {
                 @Parameter(description = "分割提示类型", required = true) @RequestParam String hintType,
                 @Parameter(description = "提示坐标", required = false) @RequestParam Map<String, Object> hintCoordinates,
                 @RequestHeader("Authorization") String token) throws IOException, OrtException, InterruptedException {
-            Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+            String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
             if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
                 return ResponseEntity
                         .status(401)
@@ -185,7 +185,7 @@ public class ImagingController {
             @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
             @Parameter(description = "图像文件", required = true) @RequestPart("file") MultipartFile image,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
-        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
             return ResponseEntity.status(401).build();
         }
@@ -216,7 +216,7 @@ public class ImagingController {
         @Parameter(description = "影像记录ID", required = true) @RequestParam String recordId,
         @Parameter(description = "图像ID", required = true) @RequestParam Long imageId,
         @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
-        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
         return ResponseEntity.status(401).build();
         }
@@ -522,7 +522,7 @@ public class ImagingController {
             @RequestParam Map<String, Object> prompts,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
         
-        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             return ResponseEntity.status(401).build();
         }
@@ -601,7 +601,7 @@ public class ImagingController {
             @RequestParam Map<String, Object> prompts,
             @RequestHeader("Authorization") String token) throws IOException, InterruptedException {
         
-        Long patientId = imageRepository.findById(imageId).get().getPatient().getPatientId();
+        String patientId = imageRepository.findById(imageId).get().getPatient().getPatientId();
         String recordId = imageRepository.findById(imageId).get().getImagingRecord().getRecordId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token) && !utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             return ResponseEntity.status(401).build();
@@ -676,7 +676,7 @@ public class ImagingController {
             if (patient == null) {
                 return ResponseEntity.notFound().build();
             }
-            Long patientId = patient.getPatientId();
+            String patientId = patient.getPatientId();
 
             MedicalRecord latestRecord = null;
             // 只有当任意参数未提供时才获取病历记录
@@ -739,7 +739,7 @@ public class ImagingController {
             @RequestParam(required = false) Integer hadAbortion,
             @RequestHeader("Authorization") String token) throws IOException {
         
-        Long patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
+        String patientId = imagingRecordRepository.findById(recordId).get().getPatient().getPatientId();
         if (!utilFunctions.isAdmin(token) && !utilFunctions.isDoctor(token)) {
             return ResponseEntity.status(401).build();
         }

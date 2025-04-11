@@ -21,13 +21,9 @@ import java.util.List;
 public class Patient {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "患者ID", example = "1")
-    private Long patientId;
-
     @Column(length = 20)
     @Schema(description = "身份证号", example = "123456789012345678")
-    private String passId;
+    private String patientId;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = true)

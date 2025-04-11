@@ -14,5 +14,5 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
 
     Image getImageByImageName(String filename);
 
-    List<Image> findByPatient_PatientId(Long patientId);
+    List<Image> findByPatient_PatientId(String patientId);
 }

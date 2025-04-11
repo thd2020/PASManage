@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PlacentaSegmentationGradingRepository extends JpaRepository<PlacentaSegmentationGrading, Long> {
 
-    List<PlacentaSegmentationGrading> findByPatient_PatientId(Long patientId);
+    List<PlacentaSegmentationGrading> findByPatient_PatientId(String patientId);
     
 }

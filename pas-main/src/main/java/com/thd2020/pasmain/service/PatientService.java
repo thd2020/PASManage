@@ -40,11 +40,11 @@ public class PatientService {
         return patientRepository.save(patient);
     }
 
-    public Patient getPatient(Long patientId) {
+    public Patient getPatient(String patientId) {
         return patientRepository.findById(patientId).isPresent()?patientRepository.findById(patientId).get():null;
     }
 
-    public Patient updatePatient(Long patientId, Patient updatedPatient) {
+    public Patient updatePatient(String patientId, Patient updatedPatient) {
         Optional<Patient> existingPatient = patientRepository.findById(patientId);
         if (existingPatient.isPresent()) {
             Patient patient = existingPatient.get();
@@ -58,7 +58,7 @@ public class PatientService {
         }
     }
 
-    public int deletePatient(Long patientId) {
+    public int deletePatient(String patientId) {
         if (patientRepository.existsById(patientId)) {
             patientRepository.deleteById(patientId);
             return 0;

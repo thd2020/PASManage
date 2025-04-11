@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface UltrasoundScoreRepository extends JpaRepository<UltrasoundScore, Long> {
-    List<UltrasoundScore> findByPatient_PatientId(Long patientId);
+    List<UltrasoundScore> findByPatient_PatientId(String patientId);
 }

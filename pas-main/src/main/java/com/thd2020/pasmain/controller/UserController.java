@@ -354,7 +354,7 @@ public class UserController {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, userId)) {
             Optional<Patient> patient = patientService.findPatientByUserId(userId);
             if (patient.isPresent()) {
-                Long patientId = patient.get().getPatientId();
+                String patientId = patient.get().getPatientId();
                 List<MedicalRecord> medicalRecordIds = prInfoService.findMedicalRecordIdsByPatientId(patientId);
                 List<SurgeryAndBloodTest> surgeryAndBloodTestIds = prInfoService.findSBRecordIdsByPatientId(patientId);
                 List<UltrasoundScore> ultrasoundScoreIds = prInfoService.findScoreIdsByPatientId(patientId);

@@ -107,7 +107,7 @@ public class UserService {
                 Patient patient = new Patient();
                 patient.setUser(user);
                 patient.setName(request.getName());
-                patient.setPassId(request.getPassId());
+                patient.setPatientId(request.getPassId());
                 patientRepository.save(patient);
             }
         }

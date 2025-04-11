@@ -7,5 +7,5 @@ import java.util.List;
 
 @Repository
 public interface PlacentaClassificationResultRepository extends JpaRepository<PlacentaClassificationResult, Long> {
-    List<PlacentaClassificationResult> findByPatient_PatientId(Long patientId);
+    List<PlacentaClassificationResult> findByPatient_PatientId(String patientId);
 }

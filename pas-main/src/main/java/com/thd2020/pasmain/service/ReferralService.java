@@ -119,7 +119,7 @@ public class ReferralService {
             }
         }
         String hospitalId = hospital.getHospitalId();
-        Long patientId = request.getPatient().getPatientId();
+        String patientId = request.getPatient().getPatientId();
         if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId) && 
             referralRequestRepository.findByPatient_PatientId(patientId).stream()
                 .allMatch(referralRequest -> referralRequest.getStatus() != ReferralRequest.Status.UNSENT)) {

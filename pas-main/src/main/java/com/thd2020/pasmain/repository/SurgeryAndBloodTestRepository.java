@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface SurgeryAndBloodTestRepository extends JpaRepository<SurgeryAndBloodTest, Long> {
-    List<SurgeryAndBloodTest> findByPatient_PatientId(Long patientId);
+    List<SurgeryAndBloodTest> findByPatient_PatientId(String patientId);
 }

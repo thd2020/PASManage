@@ -44,7 +44,7 @@ public class ImagingService {
 
     private final Path rootLocation = Paths.get("/home/lmj/xyx/pas");
 
-    public List<ImagingRecord> findImagingRecordIds(Long patientId) {
+    public List<ImagingRecord> findImagingRecordIds(String patientId) {
         return imagingRecordRepository.findByPatient_PatientId(patientId);
     }
 
@@ -118,7 +118,7 @@ public class ImagingService {
         }
     }
 
-    public Image addImageByPatient(Long patientId, MultipartFile file) throws IOException {
+    public Image addImageByPatient(String patientId, MultipartFile file) throws IOException {
         Optional<Patient> patient = patientRepository.findById(patientId);
         if (patient.isPresent()) {
             String filename = file.getOriginalFilename();
@@ -154,7 +154,7 @@ public class ImagingService {
         }
     }
 
-    public List<Image> findImageByPatientId(Long patientId) {
+    public List<Image> findImageByPatientId(String patientId) {
         return imageRepository.findByPatient_PatientId(patientId);
     }
 
@@ -180,7 +180,7 @@ public class ImagingService {
             String filename = file.getOriginalFilename();
             assert filename != null;
             String recordId = image.get().getImagingRecord().getRecordId();
-            Long patientId = image.get().getPatient().getPatientId();
+            String patientId = image.get().getPatient().getPatientId();
             Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
             Files.createDirectories(maskLocation);
             Files.copy(file.getInputStream(), maskLocation.resolve(filename));
@@ -204,7 +204,7 @@ public class ImagingService {
             String filename = file.getOriginalFilename();
             assert filename != null;
             String recordId = image.get().getImagingRecord().getRecordId();
-            Long patientId = image.get().getPatient().getPatientId();
+            String patientId = image.get().getPatient().getPatientId();
             Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
             Files.createDirectories(maskLocation);
             Files.copy(file.getInputStream(), maskLocation.resolve(filename));
@@ -222,7 +222,7 @@ public class ImagingService {
         Optional<Image> image = imageRepository.findById(imageId);
         if (image.isPresent()) {
             String recordId = image.get().getImagingRecord().getRecordId();
-            Long patientId = image.get().getPatient().getPatientId();
+            String patientId = image.get().getPatient().getPatientId();
             Files.createDirectories(maskLocation.getParent());
             Mask mask = new Mask();
             mask.setImage(image.get());
@@ -305,7 +305,7 @@ public class ImagingService {
         }
     }
 
-    public List<PlacentaSegmentationGrading> findGradingByPatientId(Long patientId) {
+    public List<PlacentaSegmentationGrading> findGradingByPatientId(String patientId) {
         return gradingRepository.findByPatient_PatientId(patientId);
     }
 

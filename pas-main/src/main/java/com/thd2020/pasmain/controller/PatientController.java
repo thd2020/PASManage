@@ -47,7 +47,7 @@ public class PatientController {
     @GetMapping("/{patientId}")
     @Operation(summary = "获取病人信息", description = "允许管理员，医生和病人本人获取病人详细信息")
     public ApiResponse<Patient> getPatient(
-            @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
+            @Parameter(description = "病人ID", required = true) @PathVariable String patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId())) {
             Patient existedPatient = patientService.getPatient(patientId);
@@ -60,7 +60,7 @@ public class PatientController {
     @PutMapping("/{patientId}")
     @Operation(summary = "更新病人信息", description = "允许管理员,医生和病人本人更新病人信息")
     public ApiResponse<Patient> updatePatient(
-            @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
+            @Parameter(description = "病人ID", required = true) @PathVariable String patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token,
             @RequestBody Patient updatedPatient) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || (patientService.getPatient(patientId).getUser() != null && utilFunctions.isMatch(token, patientService.getPatient(patientId).getUser().getUserId()))) {
@@ -74,7 +74,7 @@ public class PatientController {
     @DeleteMapping("/{patientId}")
     @Operation(summary = "删除病人信息", description = "允许管理员和医生删除病人信息")
     public ApiResponse<String> deletePatient(
-            @Parameter(description = "病人ID", required = true) @PathVariable Long patientId,
+            @Parameter(description = "病人ID", required = true) @PathVariable String patientId,
             @Parameter(description = "JWT token for authentication", required = true) @RequestHeader("Authorization") String token) {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token)) {
             int code = patientService.deletePatient(patientId);

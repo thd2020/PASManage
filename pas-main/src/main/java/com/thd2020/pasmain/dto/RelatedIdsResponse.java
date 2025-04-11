@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RelatedIdsResponse {
-    private Long patientId;
+    private String patientId;
     private List<Long> medicalRecordIds;
     private List<Long> surgeryAndBloodTestIds;
     private List<Long> ultrasoundScoreIds;

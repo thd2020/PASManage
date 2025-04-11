@@ -63,7 +63,7 @@ public class PRInfoService {
         medicalRecordRepository.delete(medicalRecord);
     }
 
-    public List<MedicalRecord> findMedicalRecordIdsByPatientId(Long patientId) {
+    public List<MedicalRecord> findMedicalRecordIdsByPatientId(String patientId) {
         return medicalRecordRepository.findByPatient_PatientId(patientId);
     }
 
@@ -97,7 +97,7 @@ public class PRInfoService {
         surgeryAndBloodTestRepository.delete(surgeryAndBloodTest);
     }
 
-    public List<SurgeryAndBloodTest> findSBRecordIdsByPatientId(Long patientId) {
+    public List<SurgeryAndBloodTest> findSBRecordIdsByPatientId(String patientId) {
         return surgeryAndBloodTestRepository.findByPatient_PatientId(patientId);
     }
 
@@ -116,7 +116,7 @@ public class PRInfoService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid score ID"));
     }
 
-    public List<UltrasoundScore> findUltrasoundScoreIdsByPatientId(Long patientId) {
+    public List<UltrasoundScore> findUltrasoundScoreIdsByPatientId(String patientId) {
         return ultrasoundScoreRepository.findByPatient_PatientId(patientId);
     }
 
@@ -134,7 +134,7 @@ public class PRInfoService {
         ultrasoundScoreRepository.delete(ultrasoundScore);
     }
 
-    public List<UltrasoundScore> findScoreIdsByPatientId(Long patientId) {
+    public List<UltrasoundScore> findScoreIdsByPatientId(String patientId) {
         return ultrasoundScoreRepository.findByPatient_PatientId(patientId);
     }
 }
