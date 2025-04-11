@@ -72,6 +72,6 @@ public class PatientService {
     }
 
     public Patient findPatientByPassId(String passId) {
-        return patientRepository.findByPassId(passId);
+        return patientRepository.findById(passId).get();
     }
 }

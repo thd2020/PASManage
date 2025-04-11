@@ -66,7 +66,7 @@ public class UserService {
             throw new IllegalArgumentException("Phone number already exists");
         }
         if (request.getRole() == User.Role.PATIENT) {
-            if (patientRepository.findByPassId(request.getPassId()) != null) {
+            if (patientRepository.findById(request.getPassId()) != null) {
                 throw new IllegalArgumentException("PassId already exists");
             }
         } else if (request.getRole() == User.Role.T_DOCTOR || request.getRole() == User.Role.B_DOCTOR) {
@@ -97,7 +97,7 @@ public class UserService {
     
         // Then handle patient registration
         if (request.getRole() == User.Role.PATIENT) {
-            Patient existingPatient = patientRepository.findByPassId(request.getPassId());
+            Patient existingPatient = patientRepository.findById(request.getPassId()).get();
             if (existingPatient != null) {
                 // Link existing patient to saved user
                 existingPatient.setUser(user);
@@ -183,7 +183,7 @@ public class UserService {
     }
 
     public Optional<User> loginWithPassId(String passId, String password) {
-        Optional<Patient> patientOpt = Optional.ofNullable(patientRepository.findByPassId(passId));
+        Optional<Patient> patientOpt = patientRepository.findById(passId);
         Optional<Doctor> doctorOpt = Optional.ofNullable(doctorRepository.findByPassId(passId));
         
         if (patientOpt.isPresent()) {
