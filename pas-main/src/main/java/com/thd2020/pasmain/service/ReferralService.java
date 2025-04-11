@@ -120,7 +120,9 @@ public class ReferralService {
         }
         String hospitalId = hospital.getHospitalId();
         Long patientId = request.getPatient().getPatientId();
-        if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId) && referralRequestRepository.getReferenceById(patientId).getStatus() != ReferralRequest.Status.UNSENT) {
+        if (referralRequestRepository.existsByFromHospital_HospitalIdAndPatient_PatientId(hospitalId, patientId) && 
+            referralRequestRepository.findByPatient_PatientId(patientId).stream()
+                .allMatch(referralRequest -> referralRequest.getStatus() != ReferralRequest.Status.UNSENT)) {
             throw new IllegalArgumentException("Referral request already exists for this patient and hospital.");
         }
         referralRequestRepository.save(request);
@@ -129,6 +131,7 @@ public class ReferralService {
 
         // Fetching the necessary entities
         Patient patient = patientService.getPatient(patientId);
+        patient.setDoctor(null); // Avoid circular reference
         List<MedicalRecord> MRs = prInfoService.findMedicalRecordIdsByPatientId(patientId);
         List<SurgeryAndBloodTest> sbTests = prInfoService.findSBRecordIdsByPatientId(patientId);
         List<UltrasoundScore> ultrasoundScores = prInfoService.findUltrasoundScoreIdsByPatientId(patientId);

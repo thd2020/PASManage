@@ -45,7 +45,7 @@ public class Patient {
     @Schema(description = "性别", example = "MALE")
     private Gender gender;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "from_hospital", nullable = true)
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "hospitalId")
     @JsonIdentityReference(alwaysAsId = true)

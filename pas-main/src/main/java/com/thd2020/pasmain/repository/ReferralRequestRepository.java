@@ -4,6 +4,7 @@ import com.thd2020.pasmain.entity.SurgeryAndBloodTest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import com.thd2020.pasmain.entity.ReferralRequest;
+import com.thd2020.pasmain.entity.ReferralRequest.Status;
 import com.thd2020.pasmain.entity.Patient;
 import com.thd2020.pasmain.entity.Hospital;
 import com.thd2020.pasmain.entity.Department;
@@ -15,5 +16,6 @@ public interface ReferralRequestRepository extends JpaRepository<ReferralRequest
     List<ReferralRequest> findByPatient(Patient patient);
     List<ReferralRequest> findByToHospital(Hospital toHospital);
     boolean existsByFromHospital_HospitalIdAndPatient_PatientId(String fromHospitalId, Long patientId);
+    List<ReferralRequest> findByPatient_PatientId(Long patientId);
 }
 
