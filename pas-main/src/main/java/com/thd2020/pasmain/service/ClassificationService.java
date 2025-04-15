@@ -2,11 +2,14 @@ package com.thd2020.pasmain.service;
 
 import com.thd2020.pasmain.dto.ClassificationResult;
 import com.thd2020.pasmain.entity.MedicalRecord;
+import com.thd2020.pasmain.util.ResourceUtils;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -14,18 +17,33 @@ import java.util.Map;
 
 @Service
 public class ClassificationService {
-    
-    private final Path pythonScriptPath = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/classify.py");
+
+    Path tempDir, pythonScriptPath, mlmpasPath, mtpasPath, vgg16Path;
+    Path vlmPthPath, lvmmedPthPath, mtpasPthPath, vggPthPath;
+
+    @Value("${python.path}")
     private final String PYTHON_BINARY_PATH = "/home/lmj/anaconda3/envs/med_sam/bin/python";
+
+    public ClassificationService() throws IOException {
+        this.tempDir = Paths.get("/home/lmj/xyx/sda2/pasres");
+        this.pythonScriptPath = ResourceUtils.extractResource("/classify.py", this.tempDir);
+        this.mlmpasPath = ResourceUtils.extractResource("/MLMPAS.py", this.tempDir);
+        this.mtpasPath = ResourceUtils.extractResource("/MTPAS.py", this.tempDir);
+        this.vgg16Path = ResourceUtils.extractResource("/vgg16.py", this.tempDir);
     
-    private final Path mlmpasPath = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/MLMPAS.py");
-    private final Path mtpasPath = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/MTPAS.py");
-    private final Path vgg16Path = Paths.get("/home/lmj/xyx/PASManage/pas-main/src/main/resources/vgg16.py");
+        this.vlmPthPath = ResourceUtils.extractResource("/vlm.pth", this.tempDir);
+        this.lvmmedPthPath = ResourceUtils.extractResource("/lvm-med.pth", this.tempDir);
+        this.mtpasPthPath = ResourceUtils.extractResource("/MTPAS.py", this.tempDir);
+        this.vggPthPath = ResourceUtils.extractResource("/vgg.pth", this.tempDir);
+    }
+
+
 
     public ClassificationResult classifyImage(String imagePath) throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder(
             PYTHON_BINARY_PATH,
             pythonScriptPath.toString(),
+            "-ckpt_path", vlmPthPath.toString(),
             "-img_path", imagePath
         );
         
@@ -78,10 +96,11 @@ public class ClassificationService {
         int hadAbortion,
         String model) throws IOException, InterruptedException {
         Path scriptPath;
+        Path pthPath;
         switch(model.toLowerCase()) {
-            case "mlmpas": scriptPath = mlmpasPath; break;
-            case "mtpas": scriptPath = mtpasPath; break;
-            case "vgg16": scriptPath = vgg16Path; break;
+            case "mlmpas": scriptPath = mlmpasPath; pthPath = lvmmedPthPath; break;
+            case "mtpas": scriptPath = mtpasPath; pthPath = mtpasPthPath; break;
+            case "vgg16": scriptPath = vgg16Path; pthPath = vggPthPath; break;
             default: throw new IllegalArgumentException("Unknown model: " + model);
         }
         ProcessBuilder processBuilder = new ProcessBuilder(
@@ -91,7 +110,8 @@ public class ClassificationService {
             "-age", String.valueOf(age),
             "-placenta_previa", String.valueOf(placentaPrevia),
             "-c_section_count", String.valueOf(cSectionCount),
-            "-had_abortion", String.valueOf(hadAbortion)
+            "-had_abortion", String.valueOf(hadAbortion),
+            "-ckpt_path", pthPath.toString()
         );
         return executeClassification(processBuilder);
     }

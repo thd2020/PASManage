@@ -66,6 +66,10 @@ public class ImagingRecord {
     @Schema(description = "标注图像数目", example = "5")
     private int labelCount;
 
+    @Column
+    @Schema(description = "图像记录文件路径", example = "/path/to/record123")
+    private String path;
+
     public enum TestType {
         CT, MRI
     }

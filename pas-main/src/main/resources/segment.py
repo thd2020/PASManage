@@ -17,14 +17,14 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--encoder_model",
     type=str,
-    default="/home/lmj/xyx/pas/models/sam-placenta.encoder.onnx",
+    default="/tmp/pas_classify/sam-placenta.encoder.onnx",
     help="Path to the SAM-Med2D onnx encoder model.",
 )
 
 parser.add_argument(
     "--decoder_model",
     type=str,
-    default="/home/lmj/xyx/pas/models/sam-placenta.decoder.onnx",
+    default="/tmp/pas_classify/sam-placenta.decoder.onnx",
     help="Path to the SAM-Med2D onnx decoder model.",
 )
 

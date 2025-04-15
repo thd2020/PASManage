@@ -1,10 +1,6 @@
 package com.thd2020.pasmain.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIdentityReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -12,7 +8,7 @@ import lombok.Data;
 @Entity
 @Data
 @Schema(description = "手术和血液检查记录")
-    public class SurgeryAndBloodTest {
+public class SurgeryAndBloodTest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,8 +24,11 @@ import lombok.Data;
     @JsonProperty("patient")
     private Patient patient;
 
-    @Schema(description = "分娩孕周", example = "39")
-    private Integer gestationalWeeks;
+    @Schema(description = "分娩孕周", example = "38")
+    private String gestationalWeeks;
+
+    @Schema(description = "住院天数", example = "5")
+    private Integer hospitalStayDays;
 
     @Column(length = 100)
     @Schema(description = "主刀医师", example = "张医生")
@@ -39,48 +38,87 @@ import lombok.Data;
     @Schema(description = "助理医师", example = "李医生")
     private String assistingSurgeon;
 
-    @Schema(description = "产前出血量（毫升）", example = "500")
-    private Integer preDeliveryBleeding;
+    @Column(length = 100)
+    @Schema(description = "手术时长", example = "1小时30分钟")
+    private String surgeryDuration;
 
-    @Schema(description = "术中出血量（毫升）", example = "1000")
+    @Schema(description = "术中出血量（mL）", example = "1200")
     private Integer intraoperativeBleeding;
 
-    @Schema(description = "是否使用腹主动脉球囊", example = "true")
-    private Boolean aorticBalloon;
+    @Schema(description = "产前出血量（mL）", example = "400")
+    private Integer preDeliveryBleeding;
 
-    @Schema(description = "是否进行子宫切除", example = "false")
-    private Boolean hysterectomy;
+    @Column(length = 100)
+    @Schema(description = "分娩麻醉方式", example = "腰麻")
+    private String anesthesiaMethod;
 
-    @Schema(description = "输注红细胞量（单位：袋）", example = "2")
-    private Integer redBloodCellsTransfused;
+    @Schema(description = "新生儿体重（g）", example = "3200")
+    private Float newbornWeight;
 
-    @Schema(description = "住院天数", example = "5")
-    private Integer hospitalStayDays;
+    @Schema(description = "新生儿动脉血气PH", example = "7.2")
+    private Float arterialPh;
 
-    @Schema(description = "输注血浆量（单位：袋）", example = "3")
-    private Integer plasmaTransfused;
+    @Column(length = 100)
+    @Schema(description = "Apgar评分", example = "10-10-10")
+    private String apgarScore;
 
-    @Column(precision = 5)
-    @Schema(description = "术前血红蛋白（g/L）", example = "120.5")
+    @Schema(description = "术前血红蛋白（g/L）", example = "123.4")
     private Float preoperativeHb;
 
-    @Column(precision = 5)
-    @Schema(description = "术前血细胞比容（%）", example = "35.0")
+    @Schema(description = "术前血细胞比容（%）", example = "36.2")
     private Float preoperativeHct;
 
-    @Column(precision = 5)
-    @Schema(description = "术后24小时内血红蛋白（g/L）", example = "110.5")
+    @Schema(description = "术后24小时内血红蛋白（g/L）", example = "108.9")
     private Float postoperative24hHb;
 
-    @Column(precision = 5)
-    @Schema(description = "术后24小时内血细胞比容（%）", example = "32.5")
+    @Schema(description = "术后24小时内血细胞比容（%）", example = "33.7")
     private Float postoperative24hHct;
 
     @Column(length = 100)
     @Schema(description = "术后输血情况", example = "无")
     private String postoperativeTransfusionStatus;
 
+    @Schema(description = "是否进行宫颈提拉术", example = "true")
+    private Boolean cervicalSurgery;
+
+    @Schema(description = "是否双侧子宫动脉结扎", example = "true")
+    private Boolean bilateralUterineArteryLigation;
+
+    @Schema(description = "是否双侧卵巢动脉结扎", example = "false")
+    private Boolean bilateralOvarianArteryLigation;
+
+    @Column(length = 100)
+    @Schema(description = "子宫手术方式", example = "前后壁排式")
+    private String uterineSurgeryType;
+
+    @Schema(description = "是否手取胎盘术", example = "true")
+    private Boolean placentaRemoval;
+
+    @Schema(description = "是否子宫整形术", example = "true")
+    private Boolean uterineReconstruction;
+
+    @Schema(description = "是否输卵管结扎", example = "false")
+    private Boolean tubalLigation;
+
+    @Schema(description = "是否使用COOK球囊", example = "true")
+    private Boolean cookBalloonSealing;
+
+    @Schema(description = "是否使用腹主动脉球囊", example = "false")
+    private Boolean aorticBalloon;
+
+    @Schema(description = "是否进行子宫切除", example = "false")
+    private Boolean hysterectomy;
+
+    @Schema(description = "输注红细胞（单位袋）", example = "2")
+    private String redBloodCellsTransfused;
+
+    @Schema(description = "输注血浆（单位mL）", example = "500")
+    private Integer plasmaTransfused;
+
+    @Schema(description = "剖宫次数", example = "2")
+    private Integer cSectionCount;
+
     @Lob
-    @Schema(description = "备注信息", example = "手术顺利，患者恢复良好")
+    @Schema(description = "备注", example = "术后恢复良好")
     private String notes;
 }

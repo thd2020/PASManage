@@ -83,5 +83,10 @@
     "name": "bilibili.cookie",
     "type": "java.lang.String",
     "description": "The cookie for the Bilibili API."
+  },
+  {
+    "name": "python.path",
+    "type": "java.lang.String",
+    "description": "The executable path of Python. Used for running Python scripts."
   }
 ]}

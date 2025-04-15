@@ -8,14 +8,6 @@ import java.net.URL;
 
 @SpringBootApplication
 public class PasMainApplication {
-
-    static {
-        try {
-            System.load("/home/lmj/xyx/pas/libopencv_java4100.so");
-        }
-        catch (UnsatisfiedLinkError ignore) { }
-    }
-
     public static void main(String[] args) {
         SpringApplication.run(PasMainApplication.class, args);
     }

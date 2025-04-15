@@ -24,7 +24,8 @@ class PromptEncoder(nn.Module):
         mask_in_chans: int,
         activation: Type[nn.Module] = nn.GELU,
         in_chan: int = 768,
-        out_chan: int = 256
+        out_chan: int = 256,
+        local_model_path = "/tmp/pas_segment/cached_biomedclip_model.pth",
     ) -> None:
         """
         Encodes prompts for input to SAM's mask decoder.
@@ -68,7 +69,6 @@ class PromptEncoder(nn.Module):
 
         # self.text_encoder = AutoModel.from_pretrained('BiomedCLIP').text_model
         # self.tokenizer = AutoTokenizer.from_pretrained('BiomedCLIP')
-        local_model_path = "/home/lmj/xyx/PASManage/pas-main/src/main/resources/cached_biomedclip_model.pth"
         if os.path.exists(local_model_path):
             checkpoint = torch.load(local_model_path)
             self.med_model = checkpoint['model']

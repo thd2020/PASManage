@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument('-base_weights', type=str, default=0, help='the weights baseline')
     parser.add_argument('-sim_weights', type=str, default=0, help='the weights sim')
     parser.add_argument('-weights', type=str, default=None, help='the weights file you want to test')
+    parser.add_argument('-clip_model_path', type=str, default='/tmp/pas_segment/cached_biomedclip_model.pth', help='local clip model ckpt')
     '''training settings'''
     parser.add_argument('-warm', type=int, default=1, help='warm up training phase')
     parser.add_argument('-lr', type=float, default=1e-4, help='initial learning rate')

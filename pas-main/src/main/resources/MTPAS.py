@@ -71,9 +71,10 @@ def parse_args():
     parser.add_argument('-placenta_previa', type=int, required=True)
     parser.add_argument('-c_section_count', type=int, required=True)
     parser.add_argument('-had_abortion', type=int, required=True)
+    parser.add_argument('-ckpt_path', type=str, required=True)
     return parser.parse_args()
 
-def load_model(img_size=224, num_classes=3, ckpt_path="/home/lmj/xyx/PASManage/pas-main/src/main/resources/mtpas.pth"):
+def load_model(img_size=224, num_classes=3, ckpt_path="/tmp/pas_classify/mtpas.pth"):
     model = MTPASClassifier(img_size, num_classes)
     weight = torch.load(ckpt_path)['state_dict']
     model.load_state_dict(weight, strict=True)
@@ -96,7 +97,7 @@ def process_clinical_data(age, pp, cs, abort):
 
 def main():
     args = parse_args()
-    model = load_model()
+    model = load_model(ckpt_path=args.ckpt_path)
     
     # Process image
     image = load_and_preprocess_image(args.img_path)

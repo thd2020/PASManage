@@ -92,6 +92,7 @@ def _build_sam(
             image_embedding_size=(image_embedding_size, image_embedding_size),
             input_image_size=(image_size, image_size),
             mask_in_chans=16,
+            local_model_path=args.clip_model_path,
         ),
         mask_decoder=MaskDecoder(
             num_multimask_outputs=args.multimask_output,

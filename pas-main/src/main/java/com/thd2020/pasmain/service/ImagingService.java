@@ -91,7 +91,7 @@ public class ImagingService {
         if (record.isPresent()) {
             String filename = file.getOriginalFilename();
             if (imageRepository.getAllByImageName(filename) != null) {
-                Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
+                Path imageLocation = Paths.get(imagingRecordRepository.findById(recordId).get().getPath());
                 Files.createDirectories(imageLocation);
                 assert filename != null;
                 Files.copy(file.getInputStream(), imageLocation.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
@@ -103,7 +103,7 @@ public class ImagingService {
                 image.setImagePath(imageLocation.resolve(filename).toString());
                 return imageRepository.save(image);
             }
-            Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId, "images");
+            Path imageLocation = Paths.get(this.rootLocation.toString(), record.get().getPatient().getPatientId().toString(), recordId);
             Files.createDirectories(imageLocation);
             assert filename != null;
             Files.copy(file.getInputStream(), imageLocation.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
@@ -122,7 +122,7 @@ public class ImagingService {
         Optional<Patient> patient = patientRepository.findById(patientId);
         if (patient.isPresent()) {
             String filename = file.getOriginalFilename();
-            Path imageLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), "images");
+            Path imageLocation = Paths.get(this.rootLocation.toString(), imagingRecordRepository.findByPatient_PatientId(patientId).get(0).getPath());
             Files.createDirectories(imageLocation);
             assert filename != null;
             Files.copy(file.getInputStream(), imageLocation.resolve(filename));
@@ -179,9 +179,7 @@ public class ImagingService {
         if (image.isPresent()) {
             String filename = file.getOriginalFilename();
             assert filename != null;
-            String recordId = image.get().getImagingRecord().getRecordId();
-            String patientId = image.get().getPatient().getPatientId();
-            Path maskLocation = Paths.get(this.rootLocation.toString(), patientId.toString(), recordId, "masks");
+            Path maskLocation = Paths.get(this.rootLocation.toString(), image.get().getImagingRecord().getPath(), "masks");
             Files.createDirectories(maskLocation);
             Files.copy(file.getInputStream(), maskLocation.resolve(filename));
             String jsonName = segmentationJson.getOriginalFilename();
