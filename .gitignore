@@ -6,6 +6,7 @@ target/
 **/*.properties
 *.xlsx
 **/*.onnx
+*.py
 
 ### STS ###
 .apt_generated

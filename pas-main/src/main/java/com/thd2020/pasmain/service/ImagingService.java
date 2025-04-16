@@ -64,6 +64,15 @@ public class ImagingService {
         }
     }
 
+    public List<ImagingRecord> getImagingRecordsByPatientId(String patientId) {
+        List<ImagingRecord> record = imagingRecordRepository.findByPatient_PatientId(patientId);
+        if (record.size() > 0) {
+            return record;
+        } else {
+            return null;
+        }
+    }   
+
     public ImagingRecord updateImagingRecord(String recordId, ImagingRecord updatedRecord) {
         return imagingRecordRepository.findById(recordId).map(record -> {
             record.setTestType(updatedRecord.getTestType());

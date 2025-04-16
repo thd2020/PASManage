@@ -7,6 +7,7 @@ import com.thd2020.pasmain.entity.*;
 import com.thd2020.pasmain.repository.ImageRepository;
 import com.thd2020.pasmain.repository.ImagingRecordRepository;
 import com.thd2020.pasmain.repository.MaskRepository;
+import com.thd2020.pasmain.repository.PatientRepository;
 import com.thd2020.pasmain.repository.PlacentaSegmentationGradingRepository;
 import com.thd2020.pasmain.service.ClassificationService;
 import com.thd2020.pasmain.service.ImagingService;
@@ -83,6 +84,9 @@ public class ImagingController {
 
     @Autowired
     private PRInfoService prInfoService;
+
+    @Autowired
+    private PatientRepository patientRepository;
 
     @PostMapping(value = "/segment-image", consumes= MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图像分割", description = "基于点或框的提示进行图像分割")
@@ -261,6 +265,19 @@ public class ImagingController {
         if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, imagingRecordRepository.getReferenceById(recordId).getPatient().getUser().getUserId())) {
             ImagingRecord gottenImagingRecord = imagingService.getImagingRecord(recordId);
             return new ApiResponse<>(gottenImagingRecord!=null?"success":"failure", gottenImagingRecord!=null?"Successfully got imaging record":"failed to get imaging record", gottenImagingRecord);
+        } else {
+            return new ApiResponse<>("error", "Unauthorized", null);
+        }
+    }
+
+    @Operation(summary = "获取某个患者的影像记录", description = "获取某个患者的所有影像记录")
+    @GetMapping("/records/patient/{patientId}")
+    public ApiResponse<List<ImagingRecord>> getImagingRecordsByPatientId(
+            @Parameter(description = "患者ID", required = true) @PathVariable String patientId,
+            @RequestHeader("Authorization") String token) {
+        if (utilFunctions.isAdmin(token) || utilFunctions.isDoctor(token) || utilFunctions.isMatch(token, patientRepository.findById(patientId).orElseThrow().getUser().getUserId())) {
+            List<ImagingRecord> imagingRecords = imagingService.getImagingRecordsByPatientId(patientId);
+            return new ApiResponse<>(imagingRecords!=null?"success":"failure", imagingRecords!=null?"Successfully got imaging records":"failed to get imaging records", imagingRecords);
         } else {
             return new ApiResponse<>("error", "Unauthorized", null);
         }
